@@ -12,9 +12,13 @@
     <version>0.0.1-SNAPSHOT</version>
     <name>banking</name>
     <description>Banking Microservice Project for StarAgile DevOps Project</description>
+
     <properties>
         <java.version>1.8</java.version>
+        <maven.surefire.version>2.22.2</maven.surefire.version>
+        <maven.surefire.report.version>2.22.2</maven.surefire.report.version>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -51,13 +55,21 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>${maven.surefire.version}</version>
                 <configuration>
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
-                    <reportFormat>html</reportFormat>
                     <testFailureIgnore>false</testFailureIgnore>
+                    <reportsDirectory>${project.build.directory}/test-classes/testng-results</reportsDirectory>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>${maven.surefire.report.version}</version>
+                <configuration>
+                    <reportsDirectory>${project.build.directory}/test-classes/testng-results</reportsDirectory>
                 </configuration>
             </plugin>
         </plugins>
