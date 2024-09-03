@@ -52,4 +52,19 @@ public class AccountService {
         Account account = new Account(1010101010, "Shubham", "Saving Account", 20000.0);
         return accountRepository.save(account);
     }
+
+    public Account getAccountDetails(long l) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getAccountDetails'");
+    }
+
+    public Account updateAccount(long l, Account updatedAccount) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'updateAccount'");
+    }
+
+    public boolean deleteAccount(long l) {
+        //TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'deleteAccount'");
+    }
 }

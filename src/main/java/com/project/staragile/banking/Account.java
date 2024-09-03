@@ -6,63 +6,57 @@ import javax.persistence.Id;
 @Entity
 public class Account {
 
-	@Id
-	private int accountNumber;
-	
-	private String accountName;
-	
-	private String accountType;
-	
-	private double accountBalance;
+    @Id
+    private long accountNumber; // Changed to long
 
-	public Account(int accountNumber, String accountName, String accountType, double accountBalance) {
-		super();
-		this.accountNumber = accountNumber;
-		this.accountName = accountName;
-		this.accountType = accountType;
-		this.accountBalance = accountBalance;
-	}
+    private String accountName;
 
-	public Account() {
-		super();
-		// TO-DO Auto-generated constructor stub
-	}
+    private String accountType;
 
-	public int getAccountNumber() {
-		return accountNumber;
-	}
+    private double accountBalance;
 
-	public void setAccountNumber(int accountNumber) {
-		this.accountNumber = accountNumber;
-	}
+    public Account(long accountNumber, String accountName, String accountType, double accountBalance) {
+        super();
+        this.accountNumber = accountNumber;
+        this.accountName = accountName;
+        this.accountType = accountType;
+        this.accountBalance = accountBalance;
+    }
 
-	public String getAccountName() {
-		return accountName;
-	}
+    public Account() {
+        super();
+        // TO-DO Auto-generated constructor stub
+    }
 
-	public void setAccountName(String accountName) {
-		this.accountName = accountName;
-	}
+    public long getAccountNumber() {
+        return accountNumber;
+    }
 
-	public String getAccountType() {
-		return accountType;
-	}
+    public void setAccountNumber(long accountNumber) {
+        this.accountNumber = accountNumber;
+    }
 
-	public void setAccountType(String accountType) {
-		this.accountType = accountType;
-	}
+    public String getAccountName() {
+        return accountName;
+    }
 
-	public double getAccountBalance() {
-		return accountBalance;
-	}
+    public void setAccountName(String accountName) {
+        this.accountName = accountName;
+    }
 
-	public void setAccountBalance(double accountBalance) {
-		this.accountBalance = accountBalance;
-	}
-	
-	
-	
-	
-	
-	
+    public String getAccountType() {
+        return accountType;
+    }
+
+    public void setAccountType(String accountType) {
+        this.accountType = accountType;
+    }
+
+    public double getAccountBalance() {
+        return accountBalance;
+    }
+
+    public void setAccountBalance(double accountBalance) {
+        this.accountBalance = accountBalance;
+    }
 }
