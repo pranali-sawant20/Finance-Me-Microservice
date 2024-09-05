@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "us-east-1"  # Update this to your desired region
+  region = "ap-south-1"  # Update this to your desired region
 }
 
 resource "aws_key_pair" "example" {
