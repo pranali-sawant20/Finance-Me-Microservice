@@ -7,38 +7,23 @@ terraform {
   }
 }
 
+# Configure the AWS Provider
 provider "aws" {
-  region = "ap-south-1"
+  region     = "ap-south-1"
 }
-
-variable "instance_type" {
-  default = "t2.micro"
-}
-
-variable "ssh_public_key" {
-  description = "Path to the SSH public key"
-  default     = "/home/ubuntu/.ssh/id_ed25519.pub"
-}
-
-variable "ssh_private_key" {
-  description = "Path to the SSH private key"
-  default     = "/home/ubuntu/.ssh/id_ed25519"
-}
-
 resource "aws_key_pair" "example" {
-  key_name   = "key02"
-  public_key = file(var.ssh_public_key)
+  key_name = "key02"
+  public_key = file("~/.ssh/id_ed25519.pub")
 }
 
 resource "aws_instance" "server" {
   ami           = "ami-0522ab6e1ddcc7055"
   instance_type = var.instance_type
-  key_name      = aws_key_pair.example.key_name
+  key_name = "key02"
 
   tags = {
     Name = "${terraform.workspace}_server"
   }
-
   provisioner "remote-exec" {
     inline = [
       "cat /etc/os-release",
@@ -48,23 +33,16 @@ resource "aws_instance" "server" {
       "chown -R ubuntu:ubuntu /home/ubuntu/.ssh"
     ]
   }
-
   connection {
-    type        = "ssh"
-    host        = self.public_ip
-    user        = "ubuntu"
-    private_key = file(var.ssh_private_key)
-  }
-
+      type        = "ssh"
+      host        = self.public_ip
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key)
+   }
   provisioner "local-exec" {
-    command = "echo '${self.public_ip} ansible_user=ubuntu ansible_private_key_file=${var.ssh_private_key}' > inventory.ini"
+    command = "echo '${self.public_ip} ansible_user=ubuntu ansible_private_key_file=~/.ssh/id_ed25519' > inventory.ini"
   }
-
   provisioner "local-exec" {
-    command = "ansible-playbook -u ubuntu -i inventory.ini -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml"
+        command = "ansible-playbook -u ubuntu -i inventory.ini -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml"
   }
-}
-
-output "server_public_ip" {
-  value = aws_instance.server.public_ip
 }
