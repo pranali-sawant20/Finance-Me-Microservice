@@ -42,7 +42,7 @@ resource "aws_instance" "app_server" {
     type        = "ssh"
     host        = self.public_ip
     user        = "ubuntu"
-    private_key = file(var.ssh_private_key)
+    private_key = file(var.ssh_private_key)  # Ensure this is the correct path
   }
 }
 
@@ -71,7 +71,7 @@ resource "aws_instance" "test_server" {
     type        = "ssh"
     host        = self.public_ip
     user        = "ubuntu"
-    private_key = file(var.ssh_private_key)
+    private_key = file(var.ssh_private_key)  # Ensure this is the correct path
   }
 }
 
@@ -99,7 +99,7 @@ resource "aws_instance" "grafana_server" {
     type        = "ssh"
     host        = self.public_ip
     user        = "ubuntu"
-    private_key = file(var.ssh_private_key)
+    private_key = file(var.ssh_private_key)  # Ensure this is the correct path
   }
 }
 
