@@ -7,23 +7,24 @@ terraform {
   }
 }
 
-# Configure the AWS Provider
 provider "aws" {
-  region     = "ap-south-1"
+  region = "ap-south-1"
 }
+
 resource "aws_key_pair" "example" {
-  key_name = "key02"
-  public_key = file("~/.ssh/id_ed25519.pub")
+  key_name   = "key02"
+  public_key = file("/full/path/to/.ssh/id_ed25519.pub")
 }
 
 resource "aws_instance" "server" {
   ami           = "ami-0522ab6e1ddcc7055"
   instance_type = var.instance_type
-  key_name = "key02"
+  key_name      = "key02"
 
   tags = {
     Name = "${terraform.workspace}_server"
   }
+
   provisioner "remote-exec" {
     inline = [
       "cat /etc/os-release",
@@ -33,16 +34,19 @@ resource "aws_instance" "server" {
       "chown -R ubuntu:ubuntu /home/ubuntu/.ssh"
     ]
   }
+
   connection {
-      type        = "ssh"
-      host        = self.public_ip
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key)
-   }
-  provisioner "local-exec" {
-    command = "echo '${self.public_ip} ansible_user=ubuntu ansible_private_key_file=~/.ssh/id_ed25519' > inventory.ini"
+    type        = "ssh"
+    host        = self.public_ip
+    user        = "ubuntu"
+    private_key = file(var.ssh_private_key)
   }
+
   provisioner "local-exec" {
-        command = "ansible-playbook -u ubuntu -i inventory.ini -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml"
+    command = "echo '${self.public_ip} ansible_user=ubuntu ansible_private_key_file=/full/path/to/.ssh/id_ed25519' > inventory.ini"
+  }
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -u ubuntu -i inventory.ini -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml"
   }
 }
