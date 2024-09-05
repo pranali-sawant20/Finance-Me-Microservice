@@ -12,14 +12,14 @@ pipeline {
     stages {
         stage('build project') {
             steps {
-                git 'https://github.com/lax66/star-agile-banking-finance_CAP01.git'
+                git 'https://github.com/suguslove10/finance-me-microservice.git'
                 sh 'mvn clean package'
             }
         }
         stage('Building docker image') {
             steps {
                 script {
-                    sh 'docker build -t laxg66/capstone01:v1 .'
+                    sh 'docker build -t suguslove10/finance-me-microservice:v1 .'
                     sh 'docker images'
                 }
             }
@@ -28,7 +28,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'Docker-cred', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                     sh "echo $PASS | docker login -u $USER --password-stdin"
-                    sh 'docker push laxg66/capstone01:v1'
+                    sh 'docker push suguslove/finance-me-microservice:v1'
                 }
             }
         }
@@ -53,7 +53,7 @@ pipeline {
             }
             steps {
                 sh '''
-                terraform workspace select prod || terraform workspace new prod
+                terraform workspace select production || terraform workspace new prod
                 terraform init
                 if terraform state show aws_key_pair.example 2>/dev/null; then
                     echo "Key pair already exists in the prod workspace"
