@@ -17,7 +17,7 @@ variable "instance_type" {
 
 # SSH Key Variables
 variable "ssh_public_key" {
-  default = "~/.ssh/id_ed25519.pub" # Update path if using different key
+  default = "/home/ubuntu/.ssh/id_ed25519.pub" # Update path if using different key
 }
 
 variable "ssh_private_key" {
