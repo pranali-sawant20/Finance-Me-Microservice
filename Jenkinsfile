@@ -49,7 +49,7 @@ pipeline {
         }
         stage('Update Prometheus Config') {
             steps {
-                sshagent (credentials: ['your-ssh-key']) {
+                sshagent (credentials: ['my-ssh-key']) {
                     sh '''
                     ssh ubuntu@${PROMETHEUS_SERVER_IP} << EOF
                     echo 'global:
