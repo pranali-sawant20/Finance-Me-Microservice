@@ -18,18 +18,18 @@ variable "instance_type" {
 # Update SSH Key variables if using id_rsa instead of id_ed25519
 variable "ssh_public_key" {
   # Adjusted to use id_rsa.pub instead of id_ed25519.pub
-  default = "/home/ubuntu/.ssh/id_rsa.pub"
+  default = "~/.ssh/id_ed25519.pub"
 }
 
 variable "ssh_private_key" {
   # Adjusted to use id_rsa instead of id_ed25519
-  default = "/home/ubuntu/.ssh/id_rsa"
+  default = "/home/ubuntu/.ssh/id_ed25519"
 }
 
 # Key Pair
 resource "aws_key_pair" "example" {
   key_name   = "key02"
-  public_key = file(var.ssh_public_key)
+  public_key = file("~/.ssh/id_ed25519.pub")
 }
 
 # Application Server
