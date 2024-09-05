@@ -51,7 +51,7 @@ pipeline {
             steps {
                 sshagent (credentials: ['my-ssh-key']) {
                     sh '''
-                    ssh ubuntu@${PROMETHEUS_SERVER_IP} << EOF
+                    ssh jenkins@${PROMETHEUS_SERVER_IP} << EOF
                     echo 'global:
   scrape_interval: 15s
 
