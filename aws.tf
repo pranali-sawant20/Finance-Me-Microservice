@@ -14,7 +14,7 @@ provider "aws" {
 
 resource "aws_key_pair" "example" {
   key_name   = "key02"
-  public_key = file("/full/path/to/.ssh/id_ed25519.pub")
+  public_key = file("/home/ubuntu/.ssh/id_ed25519.pub")
 }
 
 resource "aws_instance" "server" {
