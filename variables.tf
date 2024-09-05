@@ -11,5 +11,5 @@ variable "ssh_public_key" {
 variable "ssh_private_key" {
   description = "Path to the SSH private key file"
   type        = string
-  default     = "~/.ssh/id_rsa"
+  default     = "~/.ssh/id_ed25519"
 }
