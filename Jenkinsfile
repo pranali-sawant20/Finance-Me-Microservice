@@ -1,81 +1,59 @@
-pipeline {
-    agent any
-    environment {
-        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-    }
-    stages {
-        stage('Build Project') {
-            steps {
-                git 'https://github.com/suguslove10/finance-me-microservice.git'
-                sh 'mvn clean package'
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh 'docker build -t suguslove10/finance-me-microservice:v1 .'
-                    sh 'docker images'
-                }
-            }
-        }
-        stage('Push to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'Docker-cred', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                    sh "echo $PASS | docker login -u $USER --password-stdin"
-                    sh 'docker push suguslove10/finance-me-microservice:v1'
-                }
-            }
-        }
-        stage('Terraform Operations - Test Workspace') {
-            steps {
-                sh '''
-                terraform workspace select test || terraform workspace new test
-                terraform init
-                terraform plan
-                terraform apply -auto-approve
-                '''
-            }
-        }
-        stage('Get IPs from Terraform') {
-            steps {
-                script {
-                    env.PROMETHEUS_SERVER_IP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
-                    env.APP_SERVER_IP = sh(script: "terraform output -raw app_server_ip", returnStdout: true).trim()
-                    env.TEST_SERVER_IP = sh(script: "terraform output -raw test_server_ip", returnStdout: true).trim()
-                }
-            }
-        }
-        stage('Update Prometheus Config') {
-            steps {
-                sshagent (credentials: ['your-ssh-key']) {
-                    sh '''
-                    ssh ubuntu@${PROMETHEUS_SERVER_IP} << EOF
-                    echo 'global:
-  scrape_interval: 15s
+provider "aws" {
+  region = "us-east-1"  # Update this to your desired region
+}
 
-scrape_configs:
-  - job_name: "node_exporter"
-    static_configs:
-      - targets: ["${APP_SERVER_IP}:9100", "${TEST_SERVER_IP}:9100"]
-EOF
-                    sudo systemctl restart prometheus
-                    '''
-                }
-            }
-        }
-        stage('Terraform Operations - Production Workspace') {
-            when {
-                expression { return currentBuild.currentResult == 'SUCCESS' }
-            }
-            steps {
-                sh '''
-                terraform workspace select production || terraform workspace new production
-                terraform init
-                terraform destroy -auto-approve
-                terraform apply -auto-approve
-                '''
-            }
-        }
-    }
+resource "aws_key_pair" "example" {
+  key_name   = "key02"
+  public_key = file("~/.ssh/id_ed25519.pub")  # Path to your public key file
+}
+
+resource "aws_instance" "app_server" {
+  ami           = "ami-0522ab6e1ddcc7055"  # Replace with your AMI ID
+  instance_type = "t2.micro"  # Replace with your desired instance type
+  key_name      = aws_key_pair.example.key_name
+
+  tags = {
+    Name = "AppServer"
+  }
+
+  connection {
+    type        = "ssh"
+    host        = self.public_ip
+    user        = "ubuntu"
+    private_key = file("~/.ssh/id_ed25519")  # Path to your private key file
+  }
+}
+
+resource "aws_instance" "test_server" {
+  ami           = "ami-0522ab6e1ddcc7055"  # Replace with your AMI ID
+  instance_type = "t2.micro"  # Replace with your desired instance type
+  key_name      = aws_key_pair.example.key_name
+
+  tags = {
+    Name = "TestServer"
+  }
+
+  connection {
+    type        = "ssh"
+    host        = self.public_ip
+    user        = "ubuntu"
+    private_key = file("~/.ssh/id_ed25519")  # Path to your private key file
+  }
+}
+
+resource "aws_instance" "grafana_server" {
+  ami           = "ami-0522ab6e1ddcc7055"  # Replace with your AMI ID
+  instance_type = "t2.micro"  # Replace with your desired instance type
+  key_name      = aws_key_pair.example.key_name
+
+  tags = {
+    Name = "GrafanaServer"
+  }
+
+  connection {
+    type        = "ssh"
+    host        = self.public_ip
+    user        = "ubuntu"
+    private_key = file("~/.ssh/id_ed25519")  # Path to your private key file
+  }
 }
