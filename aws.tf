@@ -11,10 +11,19 @@ provider "aws" {
   region = "ap-south-1"
 }
 
+variable "instance_type" {
+  default = "t2.micro"
+}
+
+# Directly specify the SSH public key
+variable "ssh_public_key" {
+  default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFtYQcWryY8vYWfHQHLhirjquhMRQ9Xf1ONf8+0ydL4p ubuntu@ip-172-31-11-64"
+}
+
 # Key Pair
 resource "aws_key_pair" "example" {
   key_name   = "key02"
-  public_key = file("/home/ubuntu/.ssh/id_ed25519.pub")
+  public_key = var.ssh_public_key
 }
 
 # Application Server
