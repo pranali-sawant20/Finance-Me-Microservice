@@ -42,16 +42,16 @@ pipeline {
                 script {
                     // Updated to match Terraform output names
                     env.PROMETHEUS_SERVER_IP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
-                    env.APP_SERVER_IP = sh(script: "terraform output -raw app_server_public_ip", returnStdout: true).trim() // Fixed output variable
-                    env.TEST_SERVER_IP = sh(script: "terraform output -raw test_server_public_ip", returnStdout: true).trim() // Fixed output variable
+                    env.APP_SERVER_IP = sh(script: "terraform output -raw app_server_public_ip", returnStdout: true).trim()
+                    env.TEST_SERVER_IP = sh(script: "terraform output -raw test_server_public_ip", returnStdout: true).trim()
                 }
             }
         }
         stage('Update Prometheus Config') {
             steps {
-                sshagent (credentials: ['my-ssh-key']) {
+                sshagent(['my-ssh-key']) {
                     sh '''
-                    ssh jenkins@${PROMETHEUS_SERVER_IP} << EOF
+                    ssh -o StrictHostKeyChecking=no jenkins@${PROMETHEUS_SERVER_IP} << EOF
                     echo 'global:
   scrape_interval: 15s
 
