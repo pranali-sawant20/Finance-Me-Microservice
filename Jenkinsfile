@@ -1,28 +1,68 @@
 pipeline {
     agent any
+    parameters {
+        string(name: 'PROMETHEUS_SERVER_IP', defaultValue: 'default-prometheus-ip', description: 'IP address of the Prometheus server')
+        string(name: 'APP_SERVER_IP', defaultValue: 'default-app-server-ip', description: 'IP address of the Application server')
+        string(name: 'TEST_SERVER_IP', defaultValue: 'default-test-server-ip', description: 'IP address of the Test server')
+    }
+    environment {
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+    }
     stages {
-        stage('Clone Repo') {
+        stage('build project') {
             steps {
-                git 'https://github.com/suguslove10/finance-me-microservice.git'
-            }
-        }
-        stage('Build') {
-            steps {
+                git 'https://github.com/lax66/star-agile-banking-finance_CAP01.git'
                 sh 'mvn clean package'
             }
         }
-        stage('Deploy to App Server') {
+        stage('Building docker image') {
             steps {
-                sshagent (credentials: ['your-ssh-key']) {
-                    sh 'scp target/app.war ubuntu@${APP_SERVER_IP}:/var/lib/tomcat9/webapps/'
+                script {
+                    sh 'docker build -t laxg66/capstone01:v1 .'
+                    sh 'docker images'
                 }
             }
         }
-        stage('Deploy to Test Server') {
+        stage('push to docker-hub') {
             steps {
-                sshagent (credentials: ['your-ssh-key']) {
-                    sh 'scp target/app.war ubuntu@${TEST_SERVER_IP}:/var/lib/tomcat9/webapps/'
+                withCredentials([usernamePassword(credentialsId: 'docker-creds', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                    sh "echo $PASS | docker login -u $USER --password-stdin"
+                    sh 'docker push laxg66/capstone01:v1'
                 }
+            }
+        }
+        stage('Terraform Operations for test workspace') {
+            steps {
+                sh '''
+                terraform workspace select test || terraform workspace new test
+                terraform init
+                terraform plan
+                terraform destroy -auto-approve
+                '''
+            }
+        }
+        stage('Terraform destroy & apply for test workspace') {
+            steps {
+                sh 'terraform apply -auto-approve'
+            }
+        }
+        stage('Terraform Operations for Production workspace') {
+            when {
+                expression { return currentBuild.currentResult == 'SUCCESS' }
+            }
+            steps {
+                sh '''
+                terraform workspace select prod || terraform workspace new prod
+                terraform init
+                if terraform state show aws_key_pair.example 2>/dev/null; then
+                    echo "Key pair already exists in the prod workspace"
+                else
+                    terraform import aws_key_pair.example key02 || echo "Key pair already imported"
+                fi
+                terraform destroy -auto-approve
+                terraform apply -auto-approve
+                '''
             }
         }
         stage('Update Prometheus Config') {
@@ -45,4 +85,3 @@ EOF
         }
     }
 }
-
