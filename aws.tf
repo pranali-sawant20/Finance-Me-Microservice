@@ -15,12 +15,15 @@ variable "instance_type" {
   default = "t2.micro"
 }
 
+# Update SSH Key variables if using id_rsa instead of id_ed25519
 variable "ssh_public_key" {
-  default = "~/.ssh/id_ed25519.pub"
+  # Adjusted to use id_rsa.pub instead of id_ed25519.pub
+  default = "~/.ssh/id_rsa.pub"
 }
 
 variable "ssh_private_key" {
-  default = "~/.ssh/id_ed25519"
+  # Adjusted to use id_rsa instead of id_ed25519
+  default = "~/.ssh/id_rsa"
 }
 
 # Key Pair
@@ -127,4 +130,3 @@ output "test_server_public_ip" {
 output "grafana_server_public_ip" {
   value = aws_instance.grafana_server.public_ip
 }
-
