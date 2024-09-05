@@ -1,16 +1,26 @@
-- name : Configure Docker on EC2 Instances
-  hosts : all
-  become: true
-  connection : ssh
-  tasks : 
-  - name: updating apt
-    command : sudo apt-get update
+- hosts: all
+  become: yes
+  name: installing packages,building and containerize the application
+  tasks:
+    - name: updating the machine
+      apt:
+        upgrade: dist
+        update_cache: yes
+    - name: Installing and docker
+      apt:
+        name: docker.io
+    - name: Deploy Docker Container
+      command: docker run -itp 8084:8081 suguslove10/finance-me-microservice:v1
 
-  - name : Install Docker
-    command : sudo apt-get install -y docker.io
+    - name: getting node exporter
+      shell: |
+        wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+        tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz
+        cd node_exporter-1.8.2.linux-amd64
+        nohup ./node_exporter > /dev/null 2>&1 &
+    
+    - name: run prometheus container
+      command: docker run -d -p 9090:9090 --name prometheus -v /home/ubuntu/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
 
-  - name : Start Docker Service
-    command : sudo systemctl start docker
-
-  - name: Deploy Docker Container
-    command: docker run -itd -p 8084:8081 shubhamkushwah123/finance-me:1.0
+    - name: run grafana container
+      command: docker run -d -p 3000:3000 --name grafana grafana/grafana
