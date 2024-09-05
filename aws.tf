@@ -1,37 +1,8 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = "ap-south-1"
-}
-
-variable "instance_type" {
-  default = "t2.micro"
-}
-
-variable "ssh_public_key" {
-  default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFtYQcWryY8vYWfHQHLhirjquhMRQ9Xf1ONf8+0ydL4p ubuntu@ip-172-31-11-64"
-}
-
-variable "ssh_private_key" {
-  description = "Path to the SSH private key file"
-  type        = string
-  default     = "~/.ssh/id_rsa"
-}
-
-# Key Pair
 resource "aws_key_pair" "example" {
   key_name   = "key02"
   public_key = var.ssh_public_key
 }
 
-# Application Server
 resource "aws_instance" "app_server" {
   ami           = "ami-0522ab6e1ddcc7055"
   instance_type = var.instance_type
@@ -60,7 +31,6 @@ resource "aws_instance" "app_server" {
   }
 }
 
-# Test Server
 resource "aws_instance" "test_server" {
   ami           = "ami-0522ab6e1ddcc7055"
   instance_type = var.instance_type
@@ -89,7 +59,6 @@ resource "aws_instance" "test_server" {
   }
 }
 
-# Grafana Server
 resource "aws_instance" "grafana_server" {
   ami           = "ami-0522ab6e1ddcc7055"
   instance_type = var.instance_type
@@ -117,7 +86,6 @@ resource "aws_instance" "grafana_server" {
   }
 }
 
-# Outputs for Public IPs
 output "app_server_public_ip" {
   value = aws_instance.app_server.public_ip
 }
