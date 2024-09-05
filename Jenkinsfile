@@ -6,8 +6,8 @@ pipeline {
         string(name: 'TEST_SERVER_IP', defaultValue: 'default-test-server-ip', description: 'IP address of the Test server')
     }
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
     }
     stages {
         stage('build project') {
@@ -26,7 +26,7 @@ pipeline {
         }
         stage('push to docker-hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-creds', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                withCredentials([usernamePassword(credentialsId: 'Docker-cred', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                     sh "echo $PASS | docker login -u $USER --password-stdin"
                     sh 'docker push laxg66/capstone01:v1'
                 }
