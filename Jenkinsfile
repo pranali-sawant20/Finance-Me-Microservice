@@ -40,9 +40,10 @@ pipeline {
         stage('Get IPs from Terraform') {
             steps {
                 script {
+                    // Updated to match Terraform output names
                     env.PROMETHEUS_SERVER_IP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
-                    env.APP_SERVER_IP = sh(script: "terraform output -raw app_server_ip", returnStdout: true).trim()
-                    env.TEST_SERVER_IP = sh(script: "terraform output -raw test_server_ip", returnStdout: true).trim()
+                    env.APP_SERVER_IP = sh(script: "terraform output -raw app_server_public_ip", returnStdout: true).trim() // Fixed output variable
+                    env.TEST_SERVER_IP = sh(script: "terraform output -raw test_server_public_ip", returnStdout: true).trim() // Fixed output variable
                 }
             }
         }
