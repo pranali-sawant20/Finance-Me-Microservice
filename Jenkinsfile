@@ -5,13 +5,13 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
     }
     stages {
-        stage('build project') {
+        stage('Build Project') {
             steps {
                 git 'https://github.com/suguslove10/finance-me-microservice.git'
                 sh 'mvn clean package'
             }
         }
-        stage('Building docker image') {
+        stage('Build Docker Image') {
             steps {
                 script {
                     sh 'docker build -t suguslove10/finance-me-microservice:v1 .'
@@ -19,7 +19,7 @@ pipeline {
                 }
             }
         }
-        stage('push to docker-hub') {
+        stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'Docker-cred', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                     sh "echo $PASS | docker login -u $USER --password-stdin"
@@ -27,8 +27,7 @@ pipeline {
                 }
             }
         }
-        
-        stage('Terraform Operations for test workspace') {
+        stage('Terraform Operations - Test Workspace') {
             steps {
                 sh '''
                 terraform workspace select test || terraform workspace new test
@@ -38,18 +37,15 @@ pipeline {
                 '''
             }
         }
-
         stage('Get IPs from Terraform') {
             steps {
                 script {
-                    // Capture the IP addresses dynamically from Terraform
                     env.PROMETHEUS_SERVER_IP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
                     env.APP_SERVER_IP = sh(script: "terraform output -raw app_server_ip", returnStdout: true).trim()
                     env.TEST_SERVER_IP = sh(script: "terraform output -raw test_server_ip", returnStdout: true).trim()
                 }
             }
         }
-
         stage('Update Prometheus Config') {
             steps {
                 sshagent (credentials: ['your-ssh-key']) {
@@ -68,14 +64,13 @@ EOF
                 }
             }
         }
-
-        stage('Terraform Operations for Production workspace') {
+        stage('Terraform Operations - Production Workspace') {
             when {
                 expression { return currentBuild.currentResult == 'SUCCESS' }
             }
             steps {
                 sh '''
-                terraform workspace select production || terraform workspace new prod
+                terraform workspace select production || terraform workspace new production
                 terraform init
                 terraform destroy -auto-approve
                 terraform apply -auto-approve
