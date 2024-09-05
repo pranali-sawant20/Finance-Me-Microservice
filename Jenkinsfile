@@ -1,10 +1,5 @@
 pipeline {
     agent any
-    parameters {
-        string(name: 'PROMETHEUS_SERVER_IP', defaultValue: 'default-prometheus-ip', description: 'IP address of the Prometheus server')
-        string(name: 'APP_SERVER_IP', defaultValue: 'default-app-server-ip', description: 'IP address of the Application server')
-        string(name: 'TEST_SERVER_IP', defaultValue: 'default-test-server-ip', description: 'IP address of the Test server')
-    }
     environment {
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
@@ -28,43 +23,33 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'Docker-cred', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                     sh "echo $PASS | docker login -u $USER --password-stdin"
-                    sh 'docker push suguslove/finance-me-microservice:v1'
+                    sh 'docker push suguslove10/finance-me-microservice:v1'
                 }
             }
         }
+        
         stage('Terraform Operations for test workspace') {
             steps {
                 sh '''
                 terraform workspace select test || terraform workspace new test
                 terraform init
                 terraform plan
-                terraform destroy -auto-approve
-                '''
-            }
-        }
-        stage('Terraform destroy & apply for test workspace') {
-            steps {
-                sh 'terraform apply -auto-approve'
-            }
-        }
-        stage('Terraform Operations for Production workspace') {
-            when {
-                expression { return currentBuild.currentResult == 'SUCCESS' }
-            }
-            steps {
-                sh '''
-                terraform workspace select production || terraform workspace new prod
-                terraform init
-                if terraform state show aws_key_pair.example 2>/dev/null; then
-                    echo "Key pair already exists in the prod workspace"
-                else
-                    terraform import aws_key_pair.example key02 || echo "Key pair already imported"
-                fi
-                terraform destroy -auto-approve
                 terraform apply -auto-approve
                 '''
             }
         }
+
+        stage('Get IPs from Terraform') {
+            steps {
+                script {
+                    // Capture the IP addresses dynamically from Terraform
+                    env.PROMETHEUS_SERVER_IP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
+                    env.APP_SERVER_IP = sh(script: "terraform output -raw app_server_ip", returnStdout: true).trim()
+                    env.TEST_SERVER_IP = sh(script: "terraform output -raw test_server_ip", returnStdout: true).trim()
+                }
+            }
+        }
+
         stage('Update Prometheus Config') {
             steps {
                 sshagent (credentials: ['your-ssh-key']) {
@@ -81,6 +66,20 @@ EOF
                     sudo systemctl restart prometheus
                     '''
                 }
+            }
+        }
+
+        stage('Terraform Operations for Production workspace') {
+            when {
+                expression { return currentBuild.currentResult == 'SUCCESS' }
+            }
+            steps {
+                sh '''
+                terraform workspace select production || terraform workspace new prod
+                terraform init
+                terraform destroy -auto-approve
+                terraform apply -auto-approve
+                '''
             }
         }
     }
