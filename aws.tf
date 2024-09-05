@@ -15,21 +15,19 @@ variable "instance_type" {
   default = "t2.micro"
 }
 
-# Update SSH Key variables if using id_rsa instead of id_ed25519
+# SSH Key Variables
 variable "ssh_public_key" {
-  # Adjusted to use id_rsa.pub instead of id_ed25519.pub
-  default = "~/.ssh/id_ed25519.pub"
+  default = "~/.ssh/id_ed25519.pub" # Update path if using different key
 }
 
 variable "ssh_private_key" {
-  # Adjusted to use id_rsa instead of id_ed25519
-  default = "/home/ubuntu/.ssh/id_ed25519"
+  default = "/home/ubuntu/.ssh/id_ed25519" # Update path if using a different key
 }
 
-# Key Pair
+# AWS Key Pair
 resource "aws_key_pair" "example" {
   key_name   = "key02"
-  public_key = file("~/.ssh/id_ed25519.pub")
+  public_key = file(var.ssh_public_key)
 }
 
 # Application Server
@@ -45,9 +43,9 @@ resource "aws_instance" "app_server" {
   provisioner "remote-exec" {
     inline = [
       "sudo apt update -y",
-      "sudo apt install -y prometheus node_exporter",
-      "sudo systemctl start node_exporter",
-      "sudo systemctl enable node_exporter",
+      "sudo apt install -y prometheus node-exporter",
+      "sudo systemctl start node-exporter",
+      "sudo systemctl enable node-exporter",
       "sudo ufw allow 9100/tcp",
       "sudo ufw allow 9090/tcp"
     ]
@@ -74,9 +72,9 @@ resource "aws_instance" "test_server" {
   provisioner "remote-exec" {
     inline = [
       "sudo apt update -y",
-      "sudo apt install -y prometheus node_exporter",
-      "sudo systemctl start node_exporter",
-      "sudo systemctl enable node_exporter",
+      "sudo apt install -y prometheus node-exporter",
+      "sudo systemctl start node-exporter",
+      "sudo systemctl enable node-exporter",
       "sudo ufw allow 9100/tcp",
       "sudo ufw allow 9090/tcp"
     ]
