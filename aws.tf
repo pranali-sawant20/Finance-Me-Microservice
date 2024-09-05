@@ -103,6 +103,34 @@ resource "aws_instance" "grafana_server" {
   }
 }
 
+# Prometheus Server
+resource "aws_instance" "prometheus_server" {
+  ami           = "ami-0522ab6e1ddcc7055"
+  instance_type = var.instance_type
+  key_name      = aws_key_pair.example.key_name
+
+  tags = {
+    Name = "PrometheusServer"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update -y",
+      "sudo apt install -y prometheus",
+      "sudo systemctl start prometheus",
+      "sudo systemctl enable prometheus",
+      "sudo ufw allow 9090/tcp"
+    ]
+  }
+
+  connection {
+    type        = "ssh"
+    host        = self.public_ip
+    user        = "ubuntu"
+    private_key = file(var.ssh_private_key)
+  }
+}
+
 # Outputs for Public IPs
 output "app_server_public_ip" {
   value = aws_instance.app_server.public_ip
@@ -114,4 +142,8 @@ output "test_server_public_ip" {
 
 output "grafana_server_public_ip" {
   value = aws_instance.grafana_server.public_ip
+}
+
+output "prometheus_server_ip" {
+  value = aws_instance.prometheus_server.public_ip
 }
