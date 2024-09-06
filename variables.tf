@@ -5,7 +5,7 @@ variable "instance_type" {
 variable "ssh_public_key" {
   description = "SSH public key for EC2 instances"
   type        = string
-  default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG52UKrzzIO7th7/B8ParF1cKUvKo1zCiEteZXoG8uDd jenkins@ip-172-31-31-241"
+  default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMaKktuuLiMqhMx+dlua5KGaV1X25CKjaCIVBCubacnz jenkins@ip-172-31-18-253"
 }
 
 variable "ssh_private_key" {
