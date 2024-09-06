@@ -3,6 +3,7 @@ pipeline {
     environment {
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        ANSIBLE_SSH_KEY = credentials('ansible-ssh-key') // Add this for Ansible access
     }
     stages {
         stage('Build Project') {
@@ -13,10 +14,8 @@ pipeline {
         }
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh 'docker build -t suguslove10/finance-me-microservice:v1 .'
-                    sh 'docker images'
-                }
+                sh 'docker build -t suguslove10/finance-me-microservice:v1 .'
+                sh 'docker images'
             }
         }
         stage('Push to Docker Hub') {
@@ -27,45 +26,53 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Operations - Test Workspace') {
+        stage('Terraform Operations') {
             steps {
                 sh '''
-                terraform workspace select test || terraform workspace new test
                 terraform init
-                terraform plan
                 terraform apply -auto-approve
                 '''
             }
         }
-        stage('Get IPs from Terraform') {
+        stage('Retrieve IPs and Update Inventory') {
             steps {
                 script {
-                    env.PROMETHEUS_SERVER_IP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
-                    env.APP_SERVER_IP = sh(script: "terraform output -raw application_server_public_ip", returnStdout: true).trim()
-                    env.TEST_SERVER_IP = sh(script: "terraform output -raw testing_server_public_ip", returnStdout: true).trim()
+                    // Retrieve IPs from Terraform outputs
+                    def appServerIP = sh(script: "terraform output -raw application_server_ip", returnStdout: true).trim()
+                    def testServerIP = sh(script: "terraform output -raw testing_server_ip", returnStdout: true).trim()
+                    def prometheusServerIP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
+                    
+                    // Create Ansible inventory file
+                    writeFile file: 'inventory', text: """
+[application_server]
+${appServerIP}
+
+[testing_server]
+${testServerIP}
+
+[prometheus_server]
+${prometheusServerIP}
+"""
                 }
             }
         }
-        stage('Update Prometheus Config') {
+        stage('Deploy with Ansible') {
             steps {
-                script {
-                    // Create Prometheus config file locally
-                    writeFile file: 'prometheus.yml', text: """
-global:
-  scrape_interval: 15s
-
-scrape_configs:
-  - job_name: "node_exporter"
-    static_configs:
-      - targets: ["${APP_SERVER_IP}:9100", "${TEST_SERVER_IP}:9100"]
-"""
+                sshagent(['ansible-ssh-key']) {
+                    sh 'ansible-playbook -i inventory ansible-playbook.yml'
                 }
-                sshagent(['my-ssh-key']) {
-                    sh '''
-                    scp -i ~/.ssh/id_ed25519 prometheus.yml ubuntu@${PROMETHEUS_SERVER_IP}:/home/ubuntu/prometheus.yml
-                    ssh -i ~/.ssh/id_ed25519 ubuntu@${PROMETHEUS_SERVER_IP} "docker cp /home/ubuntu/prometheus.yml prometheus:/etc/prometheus/prometheus.yml"
-                    '''
-                }
+            }
+        }
+        stage('Clean Up Terraform') {
+            when {
+                expression { return currentBuild.currentResult == 'SUCCESS' }
+            }
+            steps {
+                sh '''
+                terraform workspace select production || terraform workspace new production
+                terraform destroy -auto-approve
+                terraform apply -auto-approve
+                '''
             }
         }
     }
