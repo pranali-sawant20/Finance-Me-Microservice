@@ -41,14 +41,15 @@ pipeline {
             steps {
                 script {
                     env.PROMETHEUS_SERVER_IP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
-                    env.APP_SERVER_IP = sh(script: "terraform output -raw app_server_public_ip", returnStdout: true).trim()
-                    env.TEST_SERVER_IP = sh(script: "terraform output -raw test_server_public_ip", returnStdout: true).trim()
+                    env.APP_SERVER_IP = sh(script: "terraform output -raw application_server_public_ip", returnStdout: true).trim()
+                    env.TEST_SERVER_IP = sh(script: "terraform output -raw testing_server_public_ip", returnStdout: true).trim()
                 }
             }
         }
         stage('Update Prometheus Config') {
             steps {
                 script {
+                    // Create Prometheus config file locally
                     writeFile file: 'prometheus.yml', text: """
 global:
   scrape_interval: 15s
@@ -61,23 +62,10 @@ scrape_configs:
                 }
                 sshagent(['my-ssh-key']) {
                     sh '''
-                    scp -o StrictHostKeyChecking=no prometheus.yml ubuntu@${PROMETHEUS_SERVER_IP}:/tmp/prometheus.yml
-                    ssh -o StrictHostKeyChecking=no ubuntu@${PROMETHEUS_SERVER_IP} "sudo mv /tmp/prometheus.yml /etc/prometheus/prometheus.yml && sudo systemctl restart prometheus"
+                    scp -i ~/.ssh/id_ed25519 prometheus.yml ubuntu@${PROMETHEUS_SERVER_IP}:/home/ubuntu/prometheus.yml
+                    ssh -i ~/.ssh/id_ed25519 ubuntu@${PROMETHEUS_SERVER_IP} "docker cp /home/ubuntu/prometheus.yml prometheus:/etc/prometheus/prometheus.yml"
                     '''
                 }
-            }
-        }
-        stage('Terraform Operations - Production Workspace') {
-            when {
-                expression { return currentBuild.currentResult == 'SUCCESS' }
-            }
-            steps {
-                sh '''
-                terraform workspace select production || terraform workspace new production
-                terraform init
-                terraform destroy -auto-approve
-                terraform apply -auto-approve
-                '''
             }
         }
     }
