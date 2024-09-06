@@ -21,7 +21,7 @@ resource "aws_key_pair" "example" {
 resource "aws_instance" "app_server" {
   ami           = "ami-0522ab6e1ddcc7055"
   instance_type = var.instance_type
-  key_name      = aws_key_pair.example.key_name
+  key_name      = "key15"
 
   tags = {
     Name = "AppServer"
