@@ -10,7 +10,7 @@
       apt:
         name: docker.io
     - name: Deploy Docker Container
-      command: docker run -itd --name capstone01 -p 8084:8081 laxg66/capstone01:v1
+      command: docker run -it -p 8084:8081 --name finance-me-microservice suguslove10/finance-me-microservice:v1
 
     - name: getting node exporter
       shell: |
@@ -20,7 +20,7 @@
         nohup ./node_exporter > /dev/null 2>&1 &
 
     - name: Download prometheus.yml from the repo
-      get_url:
+      get_url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/151db4bf28f1477a7a73da3addaa41990a9fea98/prometheus.yml
         url: https://raw.githubusercontent.com/lax66/star-agile-banking-finance_CAP01/master/prometheus.yml
         dest: /home/ubuntu/prometheus.yml
     
