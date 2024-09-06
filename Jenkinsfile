@@ -50,18 +50,19 @@ pipeline {
         stage('Update Prometheus Config') {
             steps {
                 sshagent(['my-ssh-key']) {
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ubuntu@${PROMETHEUS_SERVER_IP} 'sudo tee /etc/prometheus/prometheus.yml <<EOF
-global:
-  scrape_interval: 15s
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ubuntu@${PROMETHEUS_SERVER_IP} <<EOF
+                    echo "global:
+                      scrape_interval: 15s
 
-scrape_configs:
-  - job_name: "node_exporter"
-    static_configs:
-      - targets: ["${APP_SERVER_IP}:9100", "${TEST_SERVER_IP}:9100"]
-EOF
-                    && sudo systemctl restart prometheus'
-                    """
+                    scrape_configs:
+                      - job_name: \"node_exporter\"
+                        static_configs:
+                          - targets: [\"${APP_SERVER_IP}:9100\", \"${TEST_SERVER_IP}:9100\"]
+                    " | sudo tee /etc/prometheus/prometheus.yml > /dev/null
+                    sudo systemctl restart prometheus
+                    EOF
+                    '''
                 }
             }
         }
