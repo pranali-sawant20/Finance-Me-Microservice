@@ -1,6 +1,5 @@
-- hosts: all
+- hosts: application_server
   become: yes
-  name: Installing packages, building, and containerizing the application
   tasks:
     - name: Update the machine
       apt:
@@ -15,21 +14,45 @@
     - name: Deploy Docker Container
       command: docker run -it -p 8084:8081 --name finance-me-microservice suguslove10/finance-me-microservice:v1
       args:
-        creates: /path/to/check/container/exists # Modify as needed to ensure the container doesn't run multiple times
+        creates: /path/to/check/container/exists
 
-    - name: Get node exporter
+- hosts: testing_server
+  become: yes
+  tasks:
+    - name: Update the machine
+      apt:
+        upgrade: dist
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Deploy Docker Container
+      command: docker run -it -p 8084:8081 --name finance-me-microservice suguslove10/finance-me-microservice:v1
+      args:
+        creates: /path/to/check/container/exists
+
+    - name: Install Node Exporter
       shell: |
         wget -q https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
         tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz -C /tmp
         cd /tmp/node_exporter-1.8.2.linux-amd64
         nohup ./node_exporter > /dev/null 2>&1 &
-      args:
-        chdir: /tmp
 
-    - name: Download prometheus.yml from the repo
-      get_url: 
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
-        dest: /home/ubuntu/prometheus.yml
+- hosts: prometheus_server
+  become: yes
+  tasks:
+    - name: Update the machine
+      apt:
+        upgrade: dist
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
 
     - name: Run Prometheus container
       command: docker run -d -p 9090:9090 --name prometheus -v /home/ubuntu/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
