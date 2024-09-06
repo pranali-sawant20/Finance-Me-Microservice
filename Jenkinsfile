@@ -51,7 +51,7 @@ pipeline {
             steps {
                 sshagent(['my-ssh-key']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no jenkins@${PROMETHEUS_SERVER_IP} << EOF
+                    ssh -o StrictHostKeyChecking=no ubuntu@${PROMETHEUS_SERVER_IP} << EOF
                     echo 'global:
   scrape_interval: 15s
 
