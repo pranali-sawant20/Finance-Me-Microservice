@@ -9,12 +9,10 @@
     - name: Install Docker
       apt:
         name: docker.io
-        state: present
 
     - name: Deploy Docker Container
-      command: docker run -it -p 8084:8081 --name finance-me-microservice suguslove10/finance-me-microservice:v1
-      args:
-        creates: /path/to/check/container/exists
+      command: docker run -itd --name finance-me-microservice -p 8084:8081 suguslove10/finance-me-microservice:v1
+    
 
 - hosts: testing_server
   become: yes
@@ -27,12 +25,9 @@
     - name: Install Docker
       apt:
         name: docker.io
-        state: present
 
     - name: Deploy Docker Container
-      command: docker run -it -p 8084:8081 --name finance-me-microservice suguslove10/finance-me-microservice:v1
-      args:
-        creates: /path/to/check/container/exists
+      command: docker run -itd --name finance-me-microservice -p 8084:8081 suguslove10/finance-me-microservice:v1
 
     - name: Install Node Exporter
       shell: |
