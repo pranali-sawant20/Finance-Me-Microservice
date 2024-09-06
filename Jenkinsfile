@@ -58,7 +58,7 @@ ${prometheusServerIP}
         }
         stage('Deploy with Ansible') {
             steps {
-                sshagent(['ansible-ssh-key']) {
+                sshagent(['my-ssh-key']) {
                     sh 'ansible-playbook -i inventory ansible-playbook.yml'
                 }
             }
