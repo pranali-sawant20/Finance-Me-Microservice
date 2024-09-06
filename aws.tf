@@ -14,7 +14,7 @@ provider "aws" {
 # Key Pair
 resource "aws_key_pair" "example" {
   key_name   = "key12"
-  public_key = var.ssh_public_key
+  public_key = file("~/.ssh/id_ed255519.pub")
 }
 
 # Application Server
