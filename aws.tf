@@ -12,14 +12,14 @@ provider "aws" {
   region     = "ap-south-1"
 }
 resource "aws_key_pair" "example" {
-  key_name = "key02"
+  key_name = "demo"
   public_key = file("~/.ssh/id_ed25519.pub")
 }
 
 resource "aws_instance" "server" {
   ami           = "ami-0522ab6e1ddcc7055"
   instance_type = var.instance_type
-  key_name = "key02"
+  key_name = "demo"
 
   tags = {
     Name = "${terraform.workspace}_server"
