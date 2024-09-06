@@ -40,7 +40,6 @@ pipeline {
         stage('Get IPs from Terraform') {
             steps {
                 script {
-                    // Updated to match Terraform output names
                     env.PROMETHEUS_SERVER_IP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
                     env.APP_SERVER_IP = sh(script: "terraform output -raw app_server_public_ip", returnStdout: true).trim()
                     env.TEST_SERVER_IP = sh(script: "terraform output -raw test_server_public_ip", returnStdout: true).trim()
@@ -49,19 +48,22 @@ pipeline {
         }
         stage('Update Prometheus Config') {
             steps {
+                script {
+                    // Create Prometheus config file locally
+                    writeFile file: 'prometheus.yml', text: """
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "node_exporter"
+    static_configs:
+      - targets: ["${APP_SERVER_IP}:9100", "${TEST_SERVER_IP}:9100"]
+"""
+                }
                 sshagent(['my-ssh-key']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@${PROMETHEUS_SERVER_IP} <<EOF
-                    echo "global:
-                      scrape_interval: 15s
-
-                    scrape_configs:
-                      - job_name: \"node_exporter\"
-                        static_configs:
-                          - targets: [\"${APP_SERVER_IP}:9100\", \"${TEST_SERVER_IP}:9100\"]
-                    " | sudo tee /etc/prometheus/prometheus.yml > /dev/null
-                    sudo systemctl restart prometheus
-                    EOF
+                    scp -o StrictHostKeyChecking=no prometheus.yml ubuntu@${PROMETHEUS_SERVER_IP}:/tmp/prometheus.yml
+                    ssh -o StrictHostKeyChecking=no ubuntu@${PROMETHEUS_SERVER_IP} "sudo mv /tmp/prometheus.yml /etc/prometheus/prometheus.yml && sudo systemctl restart prometheus"
                     '''
                 }
             }
