@@ -1,56 +1,31 @@
-- hosts: application_server
+- hosts: all
   become: yes
+  name: installing packages,building and containerize the application
   tasks:
-    - name: Update the machine
+    - name: updating the machine
       apt:
         upgrade: dist
         update_cache: yes
-
-    - name: Install Docker
+    - name: Installing and docker
       apt:
         name: docker.io
-
     - name: Deploy Docker Container
-      command: docker run -itd --name finance-me-microservice -p 8084:8081 suguslove10/finance-me-microservice:v1
-    
+      command: docker run -itd --name capstone01 -p 8084:8081 laxg66/capstone01:v1
 
-- hosts: testing_server
-  become: yes
-  tasks:
-    - name: Update the machine
-      apt:
-        upgrade: dist
-        update_cache: yes
-
-    - name: Install Docker
-      apt:
-        name: docker.io
-
-    - name: Deploy Docker Container
-      command: docker run -itd --name finance-me-microservice -p 8084:8081 suguslove10/finance-me-microservice:v1
-
-    - name: Install Node Exporter
+    - name: getting node exporter
       shell: |
-        wget -q https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
-        tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz -C /tmp
-        cd /tmp/node_exporter-1.8.2.linux-amd64
+        wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+        tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz
+        cd node_exporter-1.8.2.linux-amd64
         nohup ./node_exporter > /dev/null 2>&1 &
 
-- hosts: prometheus_server
-  become: yes
-  tasks:
-    - name: Update the machine
-      apt:
-        upgrade: dist
-        update_cache: yes
-
-    - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
-
-    - name: Run Prometheus container
+    - name: Download prometheus.yml from the repo
+      get_url:
+        url: https://raw.githubusercontent.com/lax66/star-agile-banking-finance_CAP01/master/prometheus.yml
+        dest: /home/ubuntu/prometheus.yml
+    
+    - name: run prometheus container
       command: docker run -d -p 9090:9090 --name prometheus -v /home/ubuntu/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
 
-    - name: Run Grafana container
+    - name: run grafana container
       command: docker run -d -p 3000:3000 --name grafana grafana/grafana
