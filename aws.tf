@@ -129,3 +129,15 @@ resource "aws_instance" "prometheus_server" {
     }
   }
 }
+
+output "application_server_ip" {
+  value = aws_instance.application_server.public_ip
+}
+
+output "testing_server_ip" {
+  value = aws_instance.testing_server.public_ip
+}
+
+output "prometheus_server_ip" {
+  value = aws_instance.prometheus_server.public_ip
+}
