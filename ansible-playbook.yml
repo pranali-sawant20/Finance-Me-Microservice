@@ -27,8 +27,8 @@
         chdir: /tmp
 
     - name: Download prometheus.yml from the repo
-      get_url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
-        url: 
+      get_url: 
+        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
         dest: /home/ubuntu/prometheus.yml
 
     - name: Run Prometheus container
