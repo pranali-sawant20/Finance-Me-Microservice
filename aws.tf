@@ -13,7 +13,7 @@ provider "aws" {
 
 # Key Pair
 resource "aws_key_pair" "example" {
-  key_name   = "key11"
+  key_name   = "key12"
   public_key = var.ssh_public_key
 }
 
