@@ -11,20 +11,6 @@ provider "aws" {
   region = "ap-south-1"
 }
 
-# Variables
-variable "ssh_public_key" {
-  description = "Public SSH Key"
-}
-
-variable "ssh_private_key" {
-  description = "Path to Private SSH Key"
-}
-
-variable "instance_type" {
-  description = "EC2 instance type"
-  default     = "t2.micro"
-}
-
 # Key Pair
 resource "aws_key_pair" "example" {
   key_name   = "demo1"
@@ -35,7 +21,7 @@ resource "aws_key_pair" "example" {
 resource "aws_instance" "app_server" {
   ami           = "ami-0522ab6e1ddcc7055"
   instance_type = var.instance_type
-  key_name      = aws_key_pair.example.key_name
+  key_name      = "demo1"
 
   tags = {
     Name = "AppServer"
@@ -48,19 +34,7 @@ resource "aws_instance" "app_server" {
       "tar xvfz node_exporter-1.6.1.linux-amd64.tar.gz",
       "sudo cp node_exporter-1.6.1.linux-amd64/node_exporter /usr/local/bin/",
       "sudo useradd -rs /bin/false node_exporter",
-      "sudo tee /etc/systemd/system/node_exporter.service <<EOF
-[Unit]
-Description=Node Exporter
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-User=node_exporter
-ExecStart=/usr/local/bin/node_exporter
-
-[Install]
-WantedBy=default.target
-EOF",
+      "sudo tee /etc/systemd/system/node_exporter.service <<EOF\n[Unit]\nDescription=Node Exporter\nAfter=network.target\n\n[Service]\nUser=node_exporter\nExecStart=/usr/local/bin/node_exporter\n\n[Install]\nWantedBy=multi-user.target\nEOF",
       "sudo systemctl daemon-reload",
       "sudo systemctl start node_exporter",
       "sudo systemctl enable node_exporter",
@@ -93,6 +67,8 @@ resource "aws_instance" "test_server" {
       "wget https://github.com/prometheus/node_exporter/releases/latest/download/node_exporter-1.6.1.linux-amd64.tar.gz",
       "tar xvfz node_exporter-1.6.1.linux-amd64.tar.gz",
       "sudo cp node_exporter-1.6.1.linux-amd64/node_exporter /usr/local/bin/",
+      "sudo useradd -rs /bin/false node_exporter",
+      "sudo tee /etc/systemd/system/node_exporter.service <<EOF\n[Unit]\nDescription=Node Exporter\nAfter=network.target\n\n[Service]\nUser=node_exporter\nExecStart=/usr/local/bin/node_exporter\n\n[Install]\nWantedBy=multi-user.target\nEOF",
       "sudo systemctl daemon-reload",
       "sudo systemctl start node_exporter",
       "sudo systemctl enable node_exporter",
@@ -178,6 +154,6 @@ output "grafana_server_public_ip" {
   value = aws_instance.grafana_server.public_ip
 }
 
-output "prometheus_server_public_ip" {
+output "prometheus_server_ip" {
   value = aws_instance.prometheus_server.public_ip
 }
