@@ -3,77 +3,64 @@ pipeline {
     environment {
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        ANSIBLE_SSH_KEY = credentials('ansible-ssh-key') // Add this for Ansible access
     }
-    stages {
-        stage('Build Project') {
-            steps {
+    stages{
+        stage('build project'){
+            steps{
                 git 'https://github.com/suguslove10/finance-me-microservice.git'
                 sh 'mvn clean package'
+              
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t suguslove10/finance-me-microservice:v1 .'
-                sh 'docker images'
+        stage('Building  docker image'){
+            steps{
+                script{
+                    sh 'docker build -t suguslove10/finance-me-microservice:v1 .'
+                    sh 'docker images'
+                }
             }
         }
-        stage('Push to Docker Hub') {
-            steps {
+        stage('push to docker-hub'){
+            steps{
                 withCredentials([usernamePassword(credentialsId: 'Docker-cred', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                     sh "echo $PASS | docker login -u $USER --password-stdin"
                     sh 'docker push suguslove10/finance-me-microservice:v1'
                 }
             }
         }
-        stage('Terraform Operations') {
+        
+        stage('Terraform Operations for test workspace') {
             steps {
                 sh '''
+                terraform workspace select test || terraform workspace new test
                 terraform init
-                terraform apply -auto-approve
+                terraform plan
+                terraform destroy -auto-approve
                 '''
             }
         }
-        stage('Retrieve IPs and Update Inventory') {
+       stage('Terraform destroy & apply for test workspace') {
             steps {
-                script {
-                    // Retrieve IPs from Terraform outputs
-                    def appServerIP = sh(script: "terraform output -raw application_server_ip", returnStdout: true).trim()
-                    def testServerIP = sh(script: "terraform output -raw testing_server_ip", returnStdout: true).trim()
-                    def prometheusServerIP = sh(script: "terraform output -raw prometheus_server_ip", returnStdout: true).trim()
-                    
-                    // Create Ansible inventory file
-                    writeFile file: 'inventory', text: """
-[application_server]
-${appServerIP}
-
-[testing_server]
-${testServerIP}
-
-[prometheus_server]
-${prometheusServerIP}
-"""
-                }
+                sh 'terraform apply -auto-approve'
             }
-        }
-        stage('Deploy with Ansible') {
-            steps {
-                sshagent(['ansible-ssh-key']) {
-                    sh 'ansible-playbook -i inventory ansible-playbook.yml'
-                }
-            }
-        }
-        stage('Clean Up Terraform') {
+       }
+       stage('Terraform Operations for Production workspace') {
             when {
                 expression { return currentBuild.currentResult == 'SUCCESS' }
             }
             steps {
                 sh '''
-                terraform workspace select production || terraform workspace new production
+                terraform workspace select prod || terraform workspace new prod
+                terraform init
+                if terraform state show aws_key_pair.example 2>/dev/null; then
+                    echo "Key pair already exists in the prod workspace"
+                else
+                    terraform import aws_key_pair.example key02 || echo "Key pair already imported"
+                fi
                 terraform destroy -auto-approve
                 terraform apply -auto-approve
                 '''
             }
-        }
+       }
     }
 }
