@@ -10,7 +10,7 @@
       apt:
         name: docker.io
     - name: Deploy Docker Container
-      command: docker run -itd --name capstone01 -p 8084:8081 laxg66/capstone01:v1
+      command: docker run docker run -itp 8084:8081 suguslove10/finance-me-microservice:v1
 
     - name: getting node exporter
       shell: |
