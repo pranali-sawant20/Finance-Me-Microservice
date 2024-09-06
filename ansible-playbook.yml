@@ -1,5 +1,6 @@
 - hosts: all
   become: yes
+  name: Installing packages, building, and containerizing the application
   tasks:
     - name: Update the machine
       apt:
@@ -20,3 +21,18 @@
       shell: |
         wget -q https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
         tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz -C /tmp
+        cd /tmp/node_exporter-1.8.2.linux-amd64
+        nohup ./node_exporter > /dev/null 2>&1 &
+      args:
+        chdir: /tmp
+
+    - name: Download prometheus.yml from the repo
+      get_url: 
+        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
+        dest: /home/ubuntu/prometheus.yml
+
+    - name: Run Prometheus container
+      command: docker run -d -p 9090:9090 --name prometheus -v /home/ubuntu/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+
+    - name: Run Grafana container
+      command: docker run -d -p 3000:3000 --name grafana grafana/grafana
