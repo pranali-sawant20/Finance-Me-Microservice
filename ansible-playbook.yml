@@ -1,18 +1,16 @@
 - hosts: all
   become: yes
-  name: installing packages, building, and containerizing the application
+  name: installing packages,building and containerize the application
   tasks:
     - name: updating the machine
       apt:
         upgrade: dist
         update_cache: yes
-
-    - name: Installing docker
+    - name: Installing and docker
       apt:
         name: docker.io
-
     - name: Deploy Docker Container
-      command: docker run -itp 8084:8081 suguslove10/finance-me-microservice:v1
+      command: docker run -itd --name capstone01 -p 8084:8081 laxg66/capstone01:v1
 
     - name: getting node exporter
       shell: |
@@ -21,30 +19,13 @@
         cd node_exporter-1.8.2.linux-amd64
         nohup ./node_exporter > /dev/null 2>&1 &
 
+    - name: Download prometheus.yml from the repo
+      get_url:
+        url: https://raw.githubusercontent.com/lax66/star-agile-banking-finance_CAP01/master/prometheus.yml
+        dest: /home/ubuntu/prometheus.yml
+    
     - name: run prometheus container
       command: docker run -d -p 9090:9090 --name prometheus -v /home/ubuntu/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
 
     - name: run grafana container
       command: docker run -d -p 3000:3000 --name grafana grafana/grafana
-
-    # Fetch IPs from Terraform output
-    - name: Fetch Prometheus, App, and Test server IPs
-      set_fact:
-        app_server_ip: "{{ lookup('file', 'tf_outputs.json') | from_json | json_query('app_server_public_ip') }}"
-        test_server_ip: "{{ lookup('file', 'tf_outputs.json') | from_json | json_query('test_server_public_ip') }}"
-        prometheus_server_ip: "{{ lookup('file', 'tf_outputs.json') | from_json | json_query('prometheus_server_ip') }}"
-
-    - name: Update Prometheus configuration
-      copy:
-        content: |
-          global:
-            scrape_interval: 15s
-
-          scrape_configs:
-            - job_name: "node_exporter"
-              static_configs:
-                - targets: ["{{ app_server_ip }}:9100", "{{ test_server_ip }}:9100"]
-        dest: /home/ubuntu/prometheus.yml
-
-    - name: Restart Prometheus service
-      shell: sudo systemctl restart prometheus
