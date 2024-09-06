@@ -24,7 +24,7 @@ resource "aws_instance" "server" {
   key_name      = aws_key_pair.example.key_name
 
   tags = {
-    Name = "${terraform.workspace}_server"
+    Name        = "${terraform.workspace}_server"
     Environment = terraform.workspace
     Project     = "FinanceMe"
   }
@@ -49,7 +49,6 @@ resource "aws_instance" "server" {
     user        = "ubuntu"
     private_key = file(var.ssh_private_key)
     timeout     = "5m"
-    retries     = 5
   }
 
   # Local-exec to generate inventory for Ansible
