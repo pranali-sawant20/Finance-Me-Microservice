@@ -1,66 +1,92 @@
 pipeline {
     agent any
     environment {
-        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        DOCKER_IMAGE_TAG      = "suguslove10/finance-me-microservice:v1"
     }
-    stages{
-        stage('build project'){
-            steps{
+    stages {
+        stage('Clone Git Repository') {
+            steps {
                 git 'https://github.com/suguslove10/finance-me-microservice.git'
-                sh 'mvn clean package'
-              
             }
         }
-        stage('Building  docker image'){
-            steps{
-                script{
-                    sh 'docker build -t suguslove10/finance-me-microservice:v1 .'
+        stage('Build Maven Project') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE_TAG} ."
                     sh 'docker images'
                 }
             }
         }
-        stage('push to docker-hub'){
-            steps{
+        stage('Push Docker Image to Docker Hub') {
+            steps {
                 withCredentials([usernamePassword(credentialsId: 'Docker-cred', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                     sh "echo $PASS | docker login -u $USER --password-stdin"
-                    sh 'docker push suguslove10/finance-me-microservice:v1'
+                    sh "docker push ${DOCKER_IMAGE_TAG}"
                 }
             }
         }
-        
-        stage('Terraform Operations for test workspace') {
+        stage('Terraform Operations for Test Workspace') {
             steps {
-                sh '''
-                terraform workspace select test || terraform workspace new test
-                terraform init
-                terraform plan
-                terraform destroy -auto-approve
-                '''
+                script {
+                    sh '''
+                    terraform workspace select test || terraform workspace new test
+                    terraform init
+                    terraform plan -out=tfplan
+                    terraform apply -auto-approve tfplan
+                    '''
+                }
             }
         }
-       stage('Terraform destroy & apply for test workspace') {
+        stage('Terraform Destroy & Reapply for Test Workspace') {
             steps {
-                sh 'terraform apply -auto-approve'
+                script {
+                    sh '''
+                    terraform destroy -auto-approve
+                    terraform apply -auto-approve
+                    '''
+                }
             }
-       }
-       stage('Terraform Operations for Production workspace') {
+        }
+        stage('Terraform Operations for Production Workspace') {
             when {
-                expression { return currentBuild.currentResult == 'SUCCESS' }
+                expression { currentBuild.currentResult == 'SUCCESS' }
             }
             steps {
-                sh '''
-                terraform workspace select prod || terraform workspace new prod
-                terraform init
-                if terraform state show aws_key_pair.example 2>/dev/null; then
-                    echo "Key pair already exists in the prod workspace"
-                else
-                    terraform import aws_key_pair.example key02 || echo "Key pair already imported"
-                fi
-                terraform destroy -auto-approve
-                terraform apply -auto-approve
-                '''
+                script {
+                    sh '''
+                    terraform workspace select prod || terraform workspace new prod
+                    terraform init
+
+                    if terraform state show aws_key_pair.example 2>/dev/null; then
+                        echo "Key pair already exists in the prod workspace"
+                    else
+                        terraform import aws_key_pair.example key02 || echo "Key pair already imported"
+                    fi
+
+                    terraform plan -out=tfplan
+                    terraform destroy -auto-approve
+                    terraform apply -auto-approve tfplan
+                    '''
+                }
             }
-       }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline executed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
     }
 }
