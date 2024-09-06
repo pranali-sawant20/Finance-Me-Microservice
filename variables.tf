@@ -20,5 +20,5 @@ variable "ssh_private_key" {
 }
 variable "ssh_public_key" {
   type    = string
-  default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBJ0aLiohOZKlY2atZHQPT/vIU9wcCDjft3CR4G4sWSW"
+  default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEm3HKqlT2YvPwlXVLUrQHEIcy9pNb8MliOnKr+922tO"
 }
