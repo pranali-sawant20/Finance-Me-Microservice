@@ -13,7 +13,7 @@ provider "aws" {
 
 # Key Pair
 resource "aws_key_pair" "example" {
-  key_name   = "key15"
+  key_name   = "demo"
   public_key = var.ssh_public_key
 }
 
@@ -21,7 +21,7 @@ resource "aws_key_pair" "example" {
 resource "aws_instance" "app_server" {
   ami           = "ami-0522ab6e1ddcc7055"
   instance_type = var.instance_type
-  key_name      = "key15"
+  key_name      = "demo"
 
   tags = {
     Name = "AppServer"
