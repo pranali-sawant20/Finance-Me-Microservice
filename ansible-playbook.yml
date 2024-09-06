@@ -15,7 +15,7 @@
     - name: Deploy Docker Container
       command: docker run -it -p 8084:8081 --name finance-me-microservice suguslove10/finance-me-microservice:v1
       args:
-        creates: /path/to/check/container/exists # Modify as needed to ensure the container doesn't run multiple times
+        creates: /path/to/check/container/exists
 
     - name: Get node exporter
       shell: |
@@ -26,8 +26,8 @@
       args:
         chdir: /tmp
 
-    - name: Download prometheus.yml from the repo
-      get_url: 
+    - name: Download Prometheus configuration
+      get_url:
         url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
         dest: /home/ubuntu/prometheus.yml
 
