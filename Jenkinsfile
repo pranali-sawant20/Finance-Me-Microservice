@@ -32,6 +32,7 @@ pipeline {
                 sh '''
                 terraform workspace select test || terraform workspace new test
                 terraform init
+                terraform plan
                 terraform apply -auto-approve
                 '''
             }
@@ -48,7 +49,6 @@ pipeline {
         stage('Update Prometheus Config') {
             steps {
                 script {
-                    // Create Prometheus config file locally
                     writeFile file: 'prometheus.yml', text: """
 global:
   scrape_interval: 15s
@@ -75,6 +75,7 @@ scrape_configs:
                 sh '''
                 terraform workspace select production || terraform workspace new production
                 terraform init
+                terraform destroy -auto-approve
                 terraform apply -auto-approve
                 '''
             }
