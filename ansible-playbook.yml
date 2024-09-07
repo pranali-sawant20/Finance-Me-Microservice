@@ -43,17 +43,10 @@
       debug:
         var: node_exporter_ip.stdout
 
-    - name: Download Prometheus configuration file
-      get_url:
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
+    - name: Create Prometheus configuration file from template
+      template:
+        src: prometheus.yml.j2
         dest: /home/ubuntu/prometheus.yml
-
-    - name: Update prometheus.yml with Node Exporter public IP
-      lineinfile:
-        path: /home/ubuntu/prometheus.yml
-        regexp: '\${NODE_EXPORTER_IP}'
-        line: "      - targets: ['{{ node_exporter_ip.stdout }}:9100']"
-        backrefs: yes
 
     - name: Run Prometheus container
       docker_container:
