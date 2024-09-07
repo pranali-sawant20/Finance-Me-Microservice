@@ -19,7 +19,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE_TAG} ."
+                    sh "docker build -t ${DOCKER_IMAGE_TAG} --cache-from=${DOCKER_IMAGE_TAG} ."  // Use caching
                     sh 'docker images'
                 }
             }
@@ -32,25 +32,21 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Operations for Test Workspace') {
+        stage('Terraform Init') {
             steps {
                 script {
                     sh '''
                     terraform workspace select test || terraform workspace new test
-                    terraform init
-                    terraform plan -out=tfplan
-                    terraform apply -auto-approve tfplan
+                    terraform init -input=false
                     '''
                 }
             }
         }
-        stage('Terraform Destroy & Reapply for Test Workspace') {
+        stage('Terraform Plan & Apply') {
             steps {
                 script {
                     sh '''
-                    terraform plan -destroy -out=tfplan
-                    terraform apply -auto-approve tfplan
-                    terraform plan -out=tfplan
+                    terraform plan -out=tfplan -input=false
                     terraform apply -auto-approve tfplan
                     '''
                 }
@@ -64,7 +60,7 @@ pipeline {
                 script {
                     sh '''
                     terraform workspace select prod || terraform workspace new prod
-                    terraform init
+                    terraform init -input=false
 
                     if terraform state show aws_key_pair.example 2>/dev/null; then
                         echo "Key pair already exists in the prod workspace"
@@ -72,7 +68,7 @@ pipeline {
                         terraform import aws_key_pair.example key02 || echo "Key pair already imported"
                     fi
 
-                    terraform plan -out=tfplan
+                    terraform plan -out=tfplan -input=false
                     terraform apply -auto-approve tfplan
                     '''
                 }
@@ -81,7 +77,7 @@ pipeline {
     }
     post {
         always {
-            cleanWs()
+            cleanWs()  // Optionally, clean only when needed
         }
         success {
             echo 'Pipeline executed successfully!'
