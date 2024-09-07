@@ -19,7 +19,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE_TAG} --cache-from=${DOCKER_IMAGE_TAG} ."  // Use caching
+                    sh "docker build -t ${DOCKER_IMAGE_TAG} --cache-from=${DOCKER_IMAGE_TAG} ."
                     sh 'docker images'
                 }
             }
@@ -77,7 +77,7 @@ pipeline {
     }
     post {
         always {
-            cleanWs()  // Optionally, clean only when needed
+            cleanWs()
         }
         success {
             echo 'Pipeline executed successfully!'
