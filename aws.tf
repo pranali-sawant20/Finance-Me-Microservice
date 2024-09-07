@@ -11,13 +11,11 @@ provider "aws" {
   region = var.aws_region
 }
 
-# AWS Key Pair
 resource "aws_key_pair" "example" {
   key_name   = var.key_name
   public_key = file(var.ssh_public_key)
 }
 
-# AWS EC2 Instance
 resource "aws_instance" "server" {
   ami           = var.ami_id
   instance_type = var.instance_type
@@ -29,12 +27,11 @@ resource "aws_instance" "server" {
     Project     = "FinanceMe"
   }
 
-  # Remote execution
   provisioner "remote-exec" {
     inline = [
       "echo 'Provisioning started on ${self.public_ip}'",
       "sudo apt-get update -y",
-      "sudo apt-get install -y python3",
+      "sudo apt-get install -y python3 docker.io",
       "mkdir -p /home/ubuntu/.ssh",
       "echo '${var.ssh_public_key}' >> /home/ubuntu/.ssh/authorized_keys",
       "chmod 600 /home/ubuntu/.ssh/authorized_keys",
@@ -51,14 +48,12 @@ resource "aws_instance" "server" {
     timeout     = "5m"
   }
 
-  # Generate inventory for Ansible
   provisioner "local-exec" {
     command = <<EOF
       echo "${self.public_ip} ansible_user=ubuntu ansible_private_key_file=${var.ssh_private_key}" > inventory.ini
     EOF
   }
 
-  # Run Ansible playbook
   provisioner "local-exec" {
     command = <<EOF
       ansible-playbook -u ubuntu -i inventory.ini -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml
