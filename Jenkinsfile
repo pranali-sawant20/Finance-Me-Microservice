@@ -59,7 +59,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    terraform workspace select prod || terraform workspace new prod
+                    terraform workspace select production || terraform workspace new production
                     terraform init -input=false
 
                     if terraform state show aws_key_pair.example 2>/dev/null; then
