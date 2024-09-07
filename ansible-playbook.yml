@@ -51,7 +51,7 @@
     - name: Update prometheus.yml with Node Exporter public IP
       lineinfile:
         path: /home/ubuntu/prometheus.yml
-        regexp: '^ *targets:.*9100'
+        regexp: '\${NODE_EXPORTER_IP}'
         line: "      - targets: ['{{ node_exporter_ip.stdout }}:9100']"
         backrefs: yes
 
