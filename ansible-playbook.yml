@@ -1,3 +1,18 @@
+- hosts: localhost
+  become: no
+  tasks:
+    - name: Fetch Terraform outputs
+      command: terraform output -json
+      register: terraform_outputs
+
+    - name: Set Node Exporter IP
+      set_fact:
+        node_exporter_ip: "{{ terraform_outputs.stdout | from_json | json_query('node_exporter_ip.value') }}"
+
+    - name: Set Prometheus Server IP
+      set_fact:
+        prometheus_server_ip: "{{ terraform_outputs.stdout | from_json | json_query('prometheus_server_ip.value') }}"
+
 - hosts: all
   become: yes
   name: Setup Finance Me Microservice and Monitoring
@@ -34,14 +49,6 @@
         nohup ./node_exporter-1.8.2.linux-amd64/node_exporter > /dev/null 2>&1 &
       args:
         chdir: /opt
-
-    - name: Fetch the public IP address of the Node Exporter machine
-      shell: curl -s http://169.254.169.254/latest/meta-data/public-ipv4
-      register: node_exporter_ip
-
-    - name: Print Node Exporter IP
-      debug:
-        var: node_exporter_ip.stdout
 
     - name: Create Prometheus configuration file from template
       template:
