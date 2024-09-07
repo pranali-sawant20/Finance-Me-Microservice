@@ -45,7 +45,7 @@
 
     - name: Download Prometheus configuration file
       get_url:
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/main/prometheus.yml
+        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
         dest: /home/ubuntu/prometheus.yml
 
     - name: Update prometheus.yml with Node Exporter public IP
