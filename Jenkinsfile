@@ -48,8 +48,10 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    terraform destroy -auto-approve
-                    terraform apply -auto-approve
+                    terraform plan -destroy -out=tfplan
+                    terraform apply -auto-approve tfplan
+                    terraform plan -out=tfplan
+                    terraform apply -auto-approve tfplan
                     '''
                 }
             }
@@ -71,7 +73,6 @@ pipeline {
                     fi
 
                     terraform plan -out=tfplan
-                    terraform destroy -auto-approve
                     terraform apply -auto-approve tfplan
                     '''
                 }
