@@ -61,7 +61,12 @@ resource "aws_instance" "server" {
   }
 }
 
-output "instance_public_ip" {
-  description = "Public IP of the EC2 instance"
-  value       = aws_instance.server.public_ip
+output "node_exporter_ip" {
+  description = "Public IP of the Node Exporter instance"
+  value       = aws_instance.node_exporter.public_ip
+}
+
+output "prometheus_server_ip" {
+  description = "Public IP of the Prometheus server instance"
+  value       = aws_instance.prometheus_server.public_ip
 }
