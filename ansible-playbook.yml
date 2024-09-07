@@ -35,27 +35,10 @@
       args:
         chdir: /opt
 
-    - name: Fetch the public IP address of the Node Exporter machine
-      shell: curl http://169.254.169.254/latest/meta-data/public-ipv4
-      register: node_exporter_ip
-
-    - name: Print Node Exporter IP
-      debug:
-        var: node_exporter_ip.stdout
-
     - name: Download Prometheus configuration file
       get_url: 
         url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
         dest: /home/ubuntu/prometheus.yml
-
-    - name: Update prometheus.yml with Node Exporter public IP
-      blockinfile:
-        path: /home/ubuntu/prometheus.yml
-        marker: "# {mark} Updated Node Exporter target"
-        block: |
-          - job_name: 'node_exporter'
-            static_configs:
-              - targets: ['{{ node_exporter_ip.stdout }}:9100']
 
     - name: Run Prometheus container
       docker_container:
