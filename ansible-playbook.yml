@@ -36,7 +36,7 @@
         chdir: /opt
 
     - name: Fetch the public IP address of the Node Exporter machine
-      shell: curl http://169.254.169.254/latest/meta-data/public-ipv4
+      shell: curl -s http://169.254.169.254/latest/meta-data/public-ipv4
       register: node_exporter_ip
 
     - name: Print Node Exporter IP
@@ -44,16 +44,16 @@
         var: node_exporter_ip.stdout
 
     - name: Download Prometheus configuration file
-      get_url: 
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
+      get_url:
+        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/main/prometheus.yml
         dest: /home/ubuntu/prometheus.yml
 
     - name: Update prometheus.yml with Node Exporter public IP
-      blockinfile:
+      lineinfile:
         path: /home/ubuntu/prometheus.yml
-        marker: "# {mark} Updated Node Exporter target"
-        block: |
-          - targets: ['{{ node_exporter_ip.stdout }}:9100']
+        regexp: '^ *targets:.*9100'
+        line: "      - targets: ['{{ node_exporter_ip.stdout }}:9100']"
+        backrefs: yes
 
     - name: Run Prometheus container
       docker_container:
