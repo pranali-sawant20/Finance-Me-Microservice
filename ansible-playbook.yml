@@ -2,20 +2,41 @@
 - hosts: all
   become: yes
   tasks:
-
     - name: Install necessary dependencies
       apt:
         name:
           - unzip
           - wget
+          - curl
         state: present
       when: ansible_os_family == "Debian"
+
+    - name: Install Docker
+      apt:
+        name: 
+          - docker.io
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Add the current user to the Docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
 
     - name: Start and enable Docker service
       service:
         name: docker
         state: started
         enabled: true
+
+    - name: Verify Docker installation
+      shell: docker --version
+      register: docker_installed
+      changed_when: false
+
+    - debug:
+        msg: "Docker version: {{ docker_installed.stdout }}"
 
     - name: Deploy Finance Me microservice container
       docker_container:
@@ -25,100 +46,131 @@
         ports:
           - "8080:8080"
 
-    - name: Download and install Consul
+    # Consul installation and configuration
+    - name: Download Consul binary
+      get_url:
+        url: https://releases.hashicorp.com/consul/1.11.1/consul_1.11.1_linux_amd64.zip
+        dest: /tmp/consul.zip
+
+    - name: Unzip Consul binary
+      unarchive:
+        src: /tmp/consul.zip
+        dest: /usr/local/bin/
+        remote_src: yes
+
+    - name: Create Consul data directory
+      file:
+        path: /etc/consul.d
+        state: directory
+        mode: '0755'
+
+    - name: Start Consul agent
       shell: |
-        wget https://releases.hashicorp.com/consul/1.12.3/consul_1.12.3_linux_amd64.zip
-        unzip consul_1.12.3_linux_amd64.zip
-        sudo mv consul /usr/local/bin/consul
-        sudo mkdir -p /etc/consul.d
-        sudo mkdir -p /var/lib/consul
-        export PATH=$PATH:/usr/local/bin
-      args:
-        chdir: /tmp
+        nohup consul agent -dev -node=consul-server &
+      async: 30
+      poll: 0
 
     - name: Verify Consul installation
-      command: consul --version
-
-    - name: Start Consul service in dev mode
-      shell: |
-        sudo nohup consul agent -dev -bind={{ ansible_default_ipv4.address }} -advertise={{ ansible_default_ipv4.address }} > /var/log/consul.log 2>&1 &
-      async: 30
-      poll: 0
-      register: consul_start
-
-    - name: Wait for Consul to start
-      pause:
-        seconds: 10
-
-    - name: Register Node Exporter with Consul
-      shell: |
-        consul services register -name=node_exporter -address={{ ansible_default_ipv4.address }} -port=9100
-
-    - name: Verify that Consul service is running
-      shell: pgrep consul
-      register: consul_running
-      failed_when: consul_running.rc != 0
+      shell: consul --version
+      register: consul_installed
       changed_when: false
 
-    # Prometheus Installation
-    - name: Download and install Prometheus
-      shell: |
-        wget https://github.com/prometheus/prometheus/releases/download/v2.41.0/prometheus-2.41.0.linux-amd64.tar.gz
-        tar xvfz prometheus-2.41.0.linux-amd64.tar.gz
-        sudo mv prometheus-2.41.0.linux-amd64/prometheus /usr/local/bin/
-        sudo mv prometheus-2.41.0.linux-amd64/promtool /usr/local/bin/
-        sudo mkdir -p /etc/prometheus
-        sudo mv prometheus-2.41.0.linux-amd64/prometheus.yml /etc/prometheus/prometheus.yml
-      args:
-        chdir: /tmp
+    - debug:
+        msg: "Consul version: {{ consul_installed.stdout }}"
+
+    # Prometheus installation
+    - name: Download Prometheus
+      get_url:
+        url: https://github.com/prometheus/prometheus/releases/download/v2.27.1/prometheus-2.27.1.linux-amd64.tar.gz
+        dest: /tmp/prometheus.tar.gz
+
+    - name: Extract Prometheus
+      unarchive:
+        src: /tmp/prometheus.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Create Prometheus service file
+      copy:
+        dest: /etc/systemd/system/prometheus.service
+        content: |
+          [Unit]
+          Description=Prometheus Monitoring
+          After=network.target
+
+          [Service]
+          User=root
+          ExecStart=/opt/prometheus-2.27.1.linux-amd64/prometheus \
+            --config.file=/opt/prometheus-2.27.1.linux-amd64/prometheus.yml \
+            --storage.tsdb.path=/var/lib/prometheus/
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
 
     - name: Start Prometheus service
-      shell: |
-        sudo nohup prometheus --config.file=/etc/prometheus/prometheus.yml --web.listen-address=:9090 > /var/log/prometheus.log 2>&1 &
-      async: 30
-      poll: 0
+      systemd:
+        name: prometheus
+        enabled: yes
+        state: started
 
-    # Grafana Installation
-    - name: Install Grafana (Debian)
+    # Grafana installation
+    - name: Install Grafana
       apt:
         name: grafana
         state: present
-      when: ansible_os_family == "Debian"
 
-    - name: Enable and start Grafana service
+    - name: Start and enable Grafana service
       systemd:
         name: grafana-server
+        enabled: yes
         state: started
-        enabled: true
 
-    # Prometheus Configuration for Node Exporter
-    - name: Configure Prometheus to scrape Node Exporter metrics
-      lineinfile:
-        path: /etc/prometheus/prometheus.yml
-        insertafter: '# Scrape configuration'
-        line: |
-          - job_name: 'node_exporter'
-            static_configs:
-              - targets: ['{{ ansible_default_ipv4.address }}:9100']
-      notify: restart prometheus
+    # Consul service registration for Node Exporter
+    - name: Register Node Exporter with Consul
+      shell: |
+        consul services register -name=node_exporter -address={{ ansible_default_ipv4.address }} -port=9100
+      register: consul_service
+      ignore_errors: yes
 
-    - name: Restart Prometheus
+    - debug:
+        msg: "Consul service registration: {{ consul_service.stdout }}"
+
+    # Node Exporter installation for system metrics
+    - name: Download Node Exporter
+      get_url:
+        url: https://github.com/prometheus/node_exporter/releases/download/v1.1.2/node_exporter-1.1.2.linux-amd64.tar.gz
+        dest: /tmp/node_exporter.tar.gz
+
+    - name: Extract Node Exporter
+      unarchive:
+        src: /tmp/node_exporter.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Create Node Exporter service
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          After=network.target
+
+          [Service]
+          User=root
+          ExecStart=/opt/node_exporter-1.1.2.linux-amd64/node_exporter
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start Node Exporter service
       systemd:
-        name: prometheus
-        state: restarted
+        name: node_exporter
+        enabled: yes
+        state: started
 
-    # Register Prometheus with Consul
-    - name: Register Prometheus with Consul
-      shell: |
-        consul services register -name=prometheus -address={{ ansible_default_ipv4.address }} -port=9090
-
-    # Register Grafana with Consul
-    - name: Register Grafana with Consul
-      shell: |
-        consul services register -name=grafana -address={{ ansible_default_ipv4.address }} -port=3000
-
-  handlers:
-    - name: restart prometheus
-      service:
-        name: prometheus
-        state: restarted
+    - name: Ensure Node Exporter service is running
+      systemd:
+        name: node_exporter
+        state: started
