@@ -1,6 +1,9 @@
 - hosts: all
   become: yes
   name: Setup Finance Me Microservice and Monitoring
+  vars:
+    prometheus_target_ip: "{{ ansible_default_ipv4.address }}"  # Use this variable to substitute IP addresses in the template
+
   tasks:
     - name: Update and upgrade the system
       apt:
@@ -35,7 +38,7 @@
     - name: Generate Prometheus configuration file
       template:
         src: /home/ubuntu/prometheus.yml.tpl
-        dest: /home/ubuntu/prometheus.yml
+        dest: /etc/prometheus/prometheus.yml
 
     - name: Download and install Node Exporter
       shell: |
