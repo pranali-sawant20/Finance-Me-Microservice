@@ -66,6 +66,21 @@ resource "aws_instance" "server" {
   }
 }
 
+# Render prometheus.yml from template
+data "template_file" "prometheus_config" {
+  template = file("${path.module}/prometheus.yml.tpl")
+
+  vars = {
+    instance_ip = aws_instance.server.public_ip
+  }
+}
+
+# Save rendered prometheus.yml to the local machine
+resource "local_file" "prometheus_config" {
+  content  = data.template_file.prometheus_config.rendered
+  filename = "${path.module}/prometheus.yml"
+}
+
 output "instance_public_ip" {
   description = "Public IP of the EC2 instance"
   value       = aws_instance.server.public_ip
