@@ -35,9 +35,9 @@
       args:
         chdir: /opt
 
-    - name: Download Prometheus configuration file
-      get_url: 
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
+    - name: Copy Prometheus configuration file from local machine
+      copy:
+        src: /path/to/prometheus.yml  # Update this path to where Terraform generated the file
         dest: /home/ubuntu/prometheus.yml
 
     - name: Run Prometheus container
