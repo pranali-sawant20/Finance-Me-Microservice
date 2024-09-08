@@ -1,3 +1,5 @@
+# ansible-playbook.yml
+
 - hosts: all
   become: yes
   name: Setup Finance Me Microservice and Monitoring
@@ -29,6 +31,24 @@
         restart_policy: always
         ports:
           - "8084:8081"
+
+    - name: Install Consul
+      shell: |
+        wget https://releases.hashicorp.com/consul/1.12.3/consul_1.12.3_linux_amd64.zip
+        unzip consul_1.12.3_linux_amd64.zip
+        sudo mv consul /usr/local/bin/consul
+        sudo mkdir -p /etc/consul.d
+        sudo mkdir -p /var/lib/consul
+      args:
+        chdir: /tmp
+
+    - name: Start Consul service
+      shell: |
+        sudo nohup consul agent -dev -bind={{ ansible_default_ipv4.address }} -advertise={{ ansible_default_ipv4.address }} > /var/log/consul.log 2>&1 &
+    
+    - name: Register Node Exporter with Consul
+      shell: |
+        consul services register -name=node_exporter -address={{ ansible_default_ipv4.address }} -port=9100
 
     - name: Download Prometheus template file
       get_url:
