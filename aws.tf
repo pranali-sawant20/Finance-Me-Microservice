@@ -1,23 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-}
-
-# AWS Key Pair
-resource "aws_key_pair" "example" {
-  key_name   = var.key_name
-  public_key = file(var.ssh_public_key)
-}
-
-# AWS EC2 Instance
 resource "aws_instance" "server" {
   ami           = var.ami_id
   instance_type = var.instance_type
@@ -29,17 +9,27 @@ resource "aws_instance" "server" {
     Project     = "FinanceMe"
   }
 
-  # Remote execution
+  # Remote execution to set up the EC2 instance
   provisioner "remote-exec" {
     inline = [
       "echo 'Provisioning started on ${self.public_ip}'",
       "sudo apt-get update -y",
-      "sudo apt-get install -y python3",
-      "mkdir -p /home/ubuntu/.ssh",
-      "echo '${var.ssh_public_key}' >> /home/ubuntu/.ssh/authorized_keys",
-      "chmod 600 /home/ubuntu/.ssh/authorized_keys",
-      "chown -R ubuntu:ubuntu /home/ubuntu/.ssh",
-      "cat /etc/os-release"
+      "sudo apt-get install -y docker.io",
+      "sudo mkdir -p /etc/prometheus",
+      
+      # Generate prometheus.yml dynamically
+      "cat <<EOF > /etc/prometheus/prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['${self.public_ip}:9100']
+EOF
+      ",
+      "cat /etc/prometheus/prometheus.yml"
     ]
   }
 
@@ -51,37 +41,10 @@ resource "aws_instance" "server" {
     timeout     = "5m"
   }
 
-  # Generate inventory for Ansible
-  provisioner "local-exec" {
-    command = <<EOF
-      echo "${self.public_ip} ansible_user=ubuntu ansible_private_key_file=${var.ssh_private_key}" > inventory.ini
-    EOF
-  }
-
-  # Run Ansible playbook
+  # Run Ansible playbook to complete the setup
   provisioner "local-exec" {
     command = <<EOF
       ansible-playbook -u ubuntu -i inventory.ini -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml
     EOF
   }
-}
-
-# Render prometheus.yml from template
-data "template_file" "prometheus_config" {
-  template = file("${path.module}/prometheus.yml.tpl")
-
-  vars = {
-    instance_ip = aws_instance.server.public_ip
-  }
-}
-
-# Save rendered prometheus.yml to the local machine
-resource "local_file" "prometheus_config" {
-  content  = data.template_file.prometheus_config.rendered
-  filename = "${path.module}/prometheus.yml"
-}
-
-output "instance_public_ip" {
-  description = "Public IP of the EC2 instance"
-  value       = aws_instance.server.public_ip
 }
