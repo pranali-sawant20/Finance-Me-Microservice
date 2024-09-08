@@ -2,7 +2,7 @@
   become: yes
   name: Setup Finance Me Microservice and Monitoring
   vars:
-    prometheus_target_ip: "{{ ansible_default_ipv4.address }}"  # Use this variable to substitute IP addresses in the template
+    prometheus_target_ip: "{{ ansible_default_ipv4.address }}"  # Automatically get the IP address of the instance
 
   tasks:
     - name: Update and upgrade the system
