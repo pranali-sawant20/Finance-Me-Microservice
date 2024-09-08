@@ -27,6 +27,24 @@
         ports:
           - "8084:8081"
 
+    - name: Download and install Node Exporter
+      shell: |
+        wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+        tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz
+        nohup ./node_exporter-1.8.2.linux-amd64/node_exporter > /dev/null 2>&1 &
+      args:
+        chdir: /opt
+
+    - name: Download Prometheus template file
+      get_url:
+        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml.tpl
+        dest: /home/ubuntu/prometheus.yml.tpl
+
+    - name: Generate Prometheus configuration file
+      template:
+        src: /home/ubuntu/prometheus.yml.tpl
+        dest: /etc/prometheus/prometheus.yml
+
     - name: Run Prometheus container
       docker_container:
         name: prometheus
