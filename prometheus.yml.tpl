@@ -5,8 +5,8 @@ global:
 scrape_configs:
   - job_name: 'node_exporter'
     static_configs:
-      - targets: ['${instance_ip}:9100']
+      - targets: ['{{ prometheus_target_ip }}:9090']
 
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['${instance_ip}:9090']
+      - targets: ['{{ prometheus_target_ip }}:9100']
