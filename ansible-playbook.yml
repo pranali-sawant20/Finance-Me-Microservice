@@ -1,5 +1,7 @@
 - hosts: all
   become: yes
+  vars:
+    prometheus_target_ip: "{{ ansible_host }}"  # This is the dynamic IP or can be a static IP
   name: Setup Finance Me Microservice and Monitoring
   tasks:
     - name: Update and upgrade the system
