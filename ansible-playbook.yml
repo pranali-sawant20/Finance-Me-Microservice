@@ -1,89 +1,124 @@
-# ansible-playbook.yml
-
+---
 - hosts: all
   become: yes
-  name: Setup Finance Me Microservice and Monitoring
-  vars:
-    prometheus_target_ip: "{{ ansible_default_ipv4.address }}"  # Automatically get the IP address of the instance
-
   tasks:
-    - name: Update and upgrade the system
-      apt:
-        upgrade: dist
-        update_cache: yes
 
-    - name: Install Docker
+    - name: Install necessary dependencies
       apt:
-        name: docker.io
+        name:
+          - unzip
+          - wget
         state: present
+      when: ansible_os_family == "Debian"
 
     - name: Start and enable Docker service
-      systemd:
+      service:
         name: docker
         state: started
-        enabled: yes
+        enabled: true
 
     - name: Deploy Finance Me microservice container
       docker_container:
-        name: finance-me-microservice
-        image: suguslove10/finance-me-microservice:v1
+        name: finance_me
+        image: finance_me_image
         state: started
-        restart_policy: always
         ports:
-          - "8084:8081"
+          - "8080:8080"
 
-    - name: Install Consul
+    - name: Download and install Consul
       shell: |
         wget https://releases.hashicorp.com/consul/1.12.3/consul_1.12.3_linux_amd64.zip
         unzip consul_1.12.3_linux_amd64.zip
         sudo mv consul /usr/local/bin/consul
         sudo mkdir -p /etc/consul.d
         sudo mkdir -p /var/lib/consul
+        export PATH=$PATH:/usr/local/bin
       args:
         chdir: /tmp
 
-    - name: Start Consul service
+    - name: Verify Consul installation
+      command: consul --version
+
+    - name: Start Consul service in dev mode
       shell: |
         sudo nohup consul agent -dev -bind={{ ansible_default_ipv4.address }} -advertise={{ ansible_default_ipv4.address }} > /var/log/consul.log 2>&1 &
-    
+      async: 30
+      poll: 0
+      register: consul_start
+
+    - name: Wait for Consul to start
+      pause:
+        seconds: 10
+
     - name: Register Node Exporter with Consul
       shell: |
         consul services register -name=node_exporter -address={{ ansible_default_ipv4.address }} -port=9100
 
-    - name: Download Prometheus template file
-      get_url:
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml.tpl
-        dest: /home/ubuntu/prometheus.yml.tpl
+    - name: Verify that Consul service is running
+      shell: pgrep consul
+      register: consul_running
+      failed_when: consul_running.rc != 0
+      changed_when: false
 
-    - name: Generate Prometheus configuration file
-      template:
-        src: /home/ubuntu/prometheus.yml.tpl
-        dest: /etc/prometheus/prometheus.yml
-
-    - name: Download and install Node Exporter
+    # Prometheus Installation
+    - name: Download and install Prometheus
       shell: |
-        wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
-        tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz
-        nohup ./node_exporter-1.8.2.linux-amd64/node_exporter > /dev/null 2>&1 &
+        wget https://github.com/prometheus/prometheus/releases/download/v2.41.0/prometheus-2.41.0.linux-amd64.tar.gz
+        tar xvfz prometheus-2.41.0.linux-amd64.tar.gz
+        sudo mv prometheus-2.41.0.linux-amd64/prometheus /usr/local/bin/
+        sudo mv prometheus-2.41.0.linux-amd64/promtool /usr/local/bin/
+        sudo mkdir -p /etc/prometheus
+        sudo mv prometheus-2.41.0.linux-amd64/prometheus.yml /etc/prometheus/prometheus.yml
       args:
-        chdir: /opt
+        chdir: /tmp
 
-    - name: Run Prometheus container
-      docker_container:
-        name: prometheus
-        image: prom/prometheus
-        state: started
-        restart_policy: always
-        ports:
-          - "9090:9090"
-        volumes:
-          - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    - name: Start Prometheus service
+      shell: |
+        sudo nohup prometheus --config.file=/etc/prometheus/prometheus.yml --web.listen-address=:9090 > /var/log/prometheus.log 2>&1 &
+      async: 30
+      poll: 0
 
-    - name: Run Grafana container
-      docker_container:
+    # Grafana Installation
+    - name: Install Grafana (Debian)
+      apt:
         name: grafana
-        image: grafana/grafana
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Enable and start Grafana service
+      systemd:
+        name: grafana-server
         state: started
-        restart_policy: always
-        ports:
-          - "3000:3000"
+        enabled: true
+
+    # Prometheus Configuration for Node Exporter
+    - name: Configure Prometheus to scrape Node Exporter metrics
+      lineinfile:
+        path: /etc/prometheus/prometheus.yml
+        insertafter: '# Scrape configuration'
+        line: |
+          - job_name: 'node_exporter'
+            static_configs:
+              - targets: ['{{ ansible_default_ipv4.address }}:9100']
+      notify: restart prometheus
+
+    - name: Restart Prometheus
+      systemd:
+        name: prometheus
+        state: restarted
+
+    # Register Prometheus with Consul
+    - name: Register Prometheus with Consul
+      shell: |
+        consul services register -name=prometheus -address={{ ansible_default_ipv4.address }} -port=9090
+
+    # Register Grafana with Consul
+    - name: Register Grafana with Consul
+      shell: |
+        consul services register -name=grafana -address={{ ansible_default_ipv4.address }} -port=3000
+
+  handlers:
+    - name: restart prometheus
+      service:
+        name: prometheus
+        state: restarted
