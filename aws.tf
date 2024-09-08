@@ -29,27 +29,16 @@ resource "aws_instance" "server" {
     Project     = "FinanceMe"
   }
 
-  # Remote execution to set up the EC2 instance
+  # Remote execution
   provisioner "remote-exec" {
     inline = [
       "echo 'Provisioning started on ${self.public_ip}'",
       "sudo apt-get update -y",
-      "sudo apt-get install -y docker.io python3",
-      "sudo mkdir -p /etc/prometheus",
-      
-      # Generate prometheus.yml dynamically
-      "cat <<EOF > /etc/prometheus/prometheus.yml
-global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
-
-scrape_configs:
-  - job_name: 'node_exporter'
-    static_configs:
-      - targets: ['${self.public_ip}:9100']
-EOF
-      ",
-      "cat /etc/prometheus/prometheus.yml"
+      "mkdir -p /home/ubuntu/.ssh",
+      "echo '${var.ssh_public_key}' >> /home/ubuntu/.ssh/authorized_keys",
+      "chmod 600 /home/ubuntu/.ssh/authorized_keys",
+      "chown -R ubuntu:ubuntu /home/ubuntu/.ssh",
+      "cat /etc/os-release"
     ]
   }
 
