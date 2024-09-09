@@ -33,14 +33,8 @@
 
     - name: Download Prometheus template file
       get_url:
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml.tpl
+        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
         dest: /home/ubuntu/prometheus.yml.tpl
-
-    - name: Generate Prometheus configuration file
-      template:
-        src: /home/ubuntu/prometheus.yml.tpl
-        dest: /etc/prometheus/prometheus.yml
-        mode: 0644
 
     - name: Download and install Node Exporter
       shell: |
