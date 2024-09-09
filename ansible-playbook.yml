@@ -1,10 +1,6 @@
 - hosts: all
   become: yes
   name: Setup Finance Me Microservice and Monitoring
-  vars:
-    aws_region: "ap-south-1"  # Your AWS region
-    node_exporter_ip: "{{ ansible_default_ipv4.address }}"  # Automatically gets the host's IP
-
   tasks:
     - name: Update and upgrade the system
       apt:
@@ -31,11 +27,6 @@
         ports:
           - "8084:8081"
 
-    - name: Download Prometheus template file
-      get_url:
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
-        dest: /home/ubuntu/prometheus.yml
-
     - name: Download and install Node Exporter
       shell: |
         wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
@@ -43,6 +34,11 @@
         nohup ./node_exporter-1.8.2.linux-amd64/node_exporter > /dev/null 2>&1 &
       args:
         chdir: /opt
+
+    - name: Download Prometheus configuration file
+      get_url: 
+        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
+        dest: /home/ubuntu/prometheus.yml
 
     - name: Run Prometheus container
       docker_container:
@@ -53,7 +49,7 @@
         ports:
           - "9090:9090"
         volumes:
-          - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+          - /home/ubuntu/prometheus.yml:/etc/prometheus/prometheus.yml
 
     - name: Run Grafana container
       docker_container:
