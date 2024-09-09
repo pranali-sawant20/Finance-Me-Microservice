@@ -40,6 +40,17 @@
         url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
         dest: /home/ubuntu/prometheus.yml
 
+
+
+    - name: Generate Prometheus configuration file with Node Exporter's IP
+  template:
+    src: /home/ubuntu/prometheus.yml.tpl
+    dest: /etc/prometheus/prometheus.yml
+  vars:
+    node_exporter_ip: "{{ ansible_default_ipv4.address }}"
+
+
+
     - name: Run Prometheus container
       docker_container:
         name: prometheus
