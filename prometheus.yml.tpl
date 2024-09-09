@@ -1,10 +1,11 @@
+global:
+  scrape_interval: 4s
+
 scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
   - job_name: 'node_exporter'
-    ec2_sd_configs:
-      - region: "{{ aws_region }}"
-        access_key: "{{ aws_access_key }}"
-        secret_key: "{{ aws_secret_key }}"
-        port: 9100
-    relabel_configs:
-      - source_labels: [__meta_ec2_public_ip]
-        target_label: instance
+    static_configs:
+      - targets: ['{{ node_exporter_ip }}:9100']
