@@ -42,10 +42,15 @@
       args:
         chdir: /opt
 
+    - name: Remove default prometheus.yml
+      file:
+        path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
+        state: absent
+
     - name: Download custom prometheus.yml from your repository
       get_url:
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
-        dest: /opt/prometheus-2.53.2.linux-amd64/
+        url: https://raw.githubusercontent.com/lax66/star-agile-banking-finance_CAP01/master/prometheus.yml
+        dest: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         mode: '0644'
 
     - name: Start Prometheus with the custom prometheus.yml
