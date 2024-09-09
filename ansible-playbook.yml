@@ -27,33 +27,46 @@
         ports:
           - "8084:8081"
 
-    - name: Create Prometheus user and group
-      user:
-        name: prometheus
-        group: prometheus
-        system: yes
-        create_home: no
-
     - name: Download and install Node Exporter
+      get_url:
+        url: https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+        dest: /opt/node_exporter-1.8.2.linux-amd64.tar.gz
+
+    - name: Extract Node Exporter
+      unarchive:
+        src: /opt/node_exporter-1.8.2.linux-amd64.tar.gz
+        dest: /opt
+        remote_src: yes
+
+    - name: Start Node Exporter
       shell: |
-        wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
-        tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz
-        mv node_exporter-1.8.2.linux-amd64/node_exporter /usr/local/bin/
-        nohup /usr/local/bin/node_exporter > /dev/null 2>&1 &
+        nohup /opt/node_exporter-1.8.2.linux-amd64/node_exporter > /dev/null 2>&1 &
       args:
         chdir: /opt
 
     - name: Download and install Prometheus
-      shell: |
-        wget https://github.com/prometheus/prometheus/releases/download/v2.43.0/prometheus-2.43.0.linux-amd64.tar.gz
-        tar -xvf prometheus-2.43.0.linux-amd64.tar.gz
-        mv prometheus-2.43.0.linux-amd64/prometheus /usr/local/bin/
-        mv prometheus-2.43.0.linux-amd64/promtool /usr/local/bin/
-        mkdir -p /etc/prometheus
-        cp -r prometheus-2.43.0.linux-amd64/consoles /etc/prometheus
-        cp -r prometheus-2.43.0.linux-amd64/console_libraries /etc/prometheus
-      args:
-        chdir: /opt
+      get_url:
+        url: https://github.com/prometheus/prometheus/releases/download/v2.43.0/prometheus-2.43.0.linux-amd64.tar.gz
+        dest: /opt/prometheus-2.43.0.linux-amd64.tar.gz
+
+        - name: Extract Prometheus
+      unarchive:
+        src: /opt/prometheus-2.43.0.linux-amd64.tar.gz
+        dest: /opt
+        remote_src: yes
+
+    - name: Move Prometheus binaries to /usr/local/bin
+      command:
+        cmd: mv /opt/prometheus-2.43.0.linux-amd64/prometheus /usr/local/bin/ && mv /opt/prometheus-2.43.0.linux-amd64/promtool /usr/local/bin/
+
+    - name: Create Prometheus configuration directory
+      file:
+        path: /etc/prometheus
+        state: directory
+
+    - name: Copy Prometheus console libraries
+      command:
+        cmd: cp -r /opt/prometheus-2.43.0.linux-amd64/consoles /etc/prometheus/ && cp -r /opt/prometheus-2.43.0.linux-amd64/console_libraries /etc/prometheus/
 
     - name: Create Prometheus configuration file
       copy:
@@ -66,7 +79,7 @@
               static_configs:
                 - targets: ['localhost:9100']
 
-    - name: Create Prometheus service file
+    - name: Create Prometheus systemd service file
       copy:
         dest: /etc/systemd/system/prometheus.service
         content: |
@@ -85,15 +98,24 @@
           [Install]
           WantedBy=multi-user.target
 
+    - name: Create Prometheus user and group
+      user:
+        name: prometheus
+        shell: /sbin/nologin
+        state: present
+
     - name: Create Prometheus data directory
       file:
         path: /var/lib/prometheus
         state: directory
         owner: prometheus
         group: prometheus
-        mode: '0755'
 
-    - name: Reload systemd and start Prometheus service
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start Prometheus service
       systemd:
         name: prometheus
         state: started
@@ -107,3 +129,4 @@
         restart_policy: always
         ports:
           - "3000:3000"
+
