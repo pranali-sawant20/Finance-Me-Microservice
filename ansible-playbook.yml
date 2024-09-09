@@ -35,21 +35,34 @@
       args:
         chdir: /opt
 
-    - name: Download Prometheus configuration file
-      get_url: 
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
-        dest: /home/ubuntu/prometheus.yml
+    - name: Download and install Prometheus
+      shell: |
+        wget https://github.com/prometheus/prometheus/releases/download/v2.43.0/prometheus-2.43.0.linux-amd64.tar.gz
+        tar -xvf prometheus-2.43.0.linux-amd64.tar.gz
+        mv prometheus-2.43.0.linux-amd64/prometheus /usr/local/bin/
+        mv prometheus-2.43.0.linux-amd64/promtool /usr/local/bin/
+        mkdir -p /etc/prometheus
+        cp -r prometheus-2.43.0.linux-amd64/consoles /etc/prometheus
+        cp -r prometheus-2.43.0.linux-amd64/console_libraries /etc/prometheus
+      args:
+        chdir: /opt
 
-    - name: Run Prometheus container
-      docker_container:
-        name: prometheus
-        image: prom/prometheus
-        state: started
-        restart_policy: always
-        ports:
-          - "9090:9090"
-        volumes:
-          - /home/ubuntu/prometheus.yml:/etc/prometheus/prometheus.yml
+    - name: Create Prometheus configuration file
+      copy:
+        dest: /etc/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 15s
+          scrape_configs:
+            - job_name: 'node_exporter'
+              static_configs:
+                - targets: ['localhost:9100']
+
+    - name: Start Prometheus
+      shell: |
+        nohup prometheus --config.file=/etc/prometheus/prometheus.yml > /dev/null 2>&1 &
+      args:
+        chdir: /opt
 
     - name: Run Grafana container
       docker_container:
