@@ -42,16 +42,30 @@ pipeline {
                 }
             }
         }
-        stage('Apply Terraform Only If Needed') {
+        stage('Terraform Plan & Apply') {
             steps {
                 script {
-                    def changes = sh(returnStdout: true, script: "terraform plan -detailed-exitcode").trim()
-                    if (changes == '2') {
-                        echo 'Changes detected. Applying Terraform changes...'
-                        sh "terraform apply -auto-approve tfplan"
-                    } else {
-                        echo 'No changes detected in the infrastructure.'
-                    }
+                    sh '''
+                    terraform plan -out=tfplan -input=false
+                    terraform apply -auto-approve tfplan
+                    terraform output -raw instance_public_ip > instance_ip.txt
+                    '''
+                }
+            }
+        }
+        stage('Terraform Operations for Production Workspace') {
+            when {
+                expression { currentBuild.currentResult == 'SUCCESS' }
+            }
+            steps {
+                script {
+                    sh '''
+                    terraform workspace select production || terraform workspace new production
+                    terraform init -input=false
+                    terraform plan -out=tfplan -input=false
+                    terraform apply -auto-approve tfplan
+                    terraform output -raw instance_public_ip > instance_ip.txt
+                    '''
                 }
             }
         }
