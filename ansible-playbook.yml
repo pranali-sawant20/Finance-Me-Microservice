@@ -5,7 +5,6 @@
     prometheus_version: "2.53.2"
     docker_image: "suguslove10/finance-me-microservice:v1"
     prometheus_config_url: "https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml"
-    prometheus_ip: "{{ ansible_default_ipv4.address }}"
   
   name: Setup Finance Me Microservice and Monitoring
   tasks:
