@@ -11,13 +11,14 @@ provider "aws" {
   region = var.aws_region
 }
 
-# AWS Key Pair
+# Create or use an existing key pair
 resource "aws_key_pair" "example" {
+  count      = var.key_pair_exists ? 0 : 1
   key_name   = var.key_name
   public_key = file(var.ssh_public_key)
 
   lifecycle {
-    prevent_destroy = true  # Prevent the key pair from being destroyed
+    prevent_destroy = true
   }
 }
 
@@ -25,7 +26,7 @@ resource "aws_key_pair" "example" {
 resource "aws_instance" "server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  key_name      = aws_key_pair.example.key_name
+  key_name      = var.key_name
 
   tags = {
     Name        = "${terraform.workspace}_server"
@@ -39,7 +40,7 @@ resource "aws_instance" "server" {
       "echo 'Provisioning started on ${self.public_ip}'",
       "sudo apt-get update -y",
       "mkdir -p /home/ubuntu/.ssh",
-      "echo '${var.ssh_public_key}' >> /home/ubuntu/.ssh/authorized_keys",
+      "echo '${file(var.ssh_public_key)}' >> /home/ubuntu/.ssh/authorized_keys",
       "chmod 600 /home/ubuntu/.ssh/authorized_keys",
       "chown -R ubuntu:ubuntu /home/ubuntu/.ssh",
       "cat /etc/os-release"
