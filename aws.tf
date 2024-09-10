@@ -15,6 +15,9 @@ provider "aws" {
 resource "aws_key_pair" "example" {
   key_name   = var.key_name
   public_key = file(var.ssh_public_key)
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # AWS EC2 Instance
