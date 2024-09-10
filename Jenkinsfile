@@ -32,7 +32,7 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Init for Test Environment') {
+        stage('Terraform Init') {
             steps {
                 script {
                     sh '''
@@ -42,35 +42,33 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Plan & Apply for Test Environment') {
+        stage('Terraform Plan & Apply for Test') {
             steps {
                 script {
                     sh '''
-                    terraform plan -var-file="test.tfvars" -out=tfplan -input=false
+                    terraform plan -out=tfplan -input=false
                     terraform apply -auto-approve tfplan
                     terraform output -raw instance_public_ip > instance_ip.txt
                     '''
                 }
             }
         }
-        stage('Terraform Init for Production Environment') {
-            steps {
-                script {
-                    sh '''
-                    terraform workspace select production || terraform workspace new production
-                    terraform init -input=false
-                    '''
-                }
-            }
-        }
-        stage('Terraform Plan & Apply for Production Environment') {
+        stage('Terraform Operations for Production Workspace') {
             when {
                 expression { currentBuild.currentResult == 'SUCCESS' }
             }
             steps {
                 script {
                     sh '''
-                    terraform plan -var-file="production.tfvars" -out=tfplan -input=false
+                    terraform workspace select production || terraform workspace new production
+                    terraform init -input=false
+
+                    # Only import key pair if it does not exist
+                    if ! terraform state show aws_key_pair.example 2>/dev/null; then
+                        terraform import aws_key_pair.example key02 || echo "Key pair already imported"
+                    fi
+
+                    terraform plan -out=tfplan -input=false
                     terraform apply -auto-approve tfplan
                     terraform output -raw instance_public_ip > instance_ip.txt
                     '''
