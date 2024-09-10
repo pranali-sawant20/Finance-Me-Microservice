@@ -15,9 +15,9 @@ provider "aws" {
 resource "aws_key_pair" "example" {
   key_name   = var.key_name
   public_key = file(var.ssh_public_key)
-  # Ensure that Terraform does not recreate the key pair if it already exists
+
   lifecycle {
-    create_before_destroy = false
+    prevent_destroy = true
   }
 }
 
