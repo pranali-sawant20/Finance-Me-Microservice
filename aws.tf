@@ -1,15 +1,27 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
 # AWS Key Pair
 resource "aws_key_pair" "example" {
-  count       = var.environment == "production" ? 1 : 0
-  key_name    = var.key_name
-  public_key  = file(var.ssh_public_key)
+  key_name   = var.key_name
+  public_key = file(var.ssh_public_key)
 }
 
 # AWS EC2 Instance
 resource "aws_instance" "server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  key_name      = var.environment == "production" ? aws_key_pair.example[0].key_name : var.key_name
+  key_name      = aws_key_pair.example.key_name
 
   tags = {
     Name        = "${terraform.workspace}_server"
@@ -52,7 +64,7 @@ resource "aws_instance" "server" {
     EOF
   }
 }
-
+Az
 # Output the public IP of the instance
 output "instance_public_ip" {
   description = "Public IP of the EC2 instance"
