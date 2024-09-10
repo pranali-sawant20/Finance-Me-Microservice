@@ -1,5 +1,6 @@
 - hosts: all
   become: yes
+  name: Setup Finance Me Microservice and Monitoring
   tasks:
     - name: Update and upgrade the system
       apt:
@@ -51,16 +52,6 @@
         url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
         dest: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         mode: '0644'
-
-    - name: Fetch the public IP from Terraform output
-      command: terraform output -raw instance_public_ip
-      register: terraform_output
-
-    - name: Update Prometheus configuration with instance IP
-      lineinfile:
-        path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
-        regexp: '^targets: \['
-        line: "targets: ['{{ terraform_output.stdout }}:9100']"
 
     - name: Start Prometheus with the custom prometheus.yml
       shell: |
