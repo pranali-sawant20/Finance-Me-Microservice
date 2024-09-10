@@ -7,6 +7,7 @@ terraform {
   }
 }
 
+# AWS Provider configuration
 provider "aws" {
   region = var.aws_region
 }
@@ -23,13 +24,14 @@ resource "aws_instance" "server" {
   instance_type = var.instance_type
   key_name      = aws_key_pair.example.key_name
 
+  # Tagging the EC2 instance
   tags = {
     Name        = "${terraform.workspace}_server"
     Environment = terraform.workspace
     Project     = "FinanceMe"
   }
 
-  # Remote execution
+  # Remote provisioning
   provisioner "remote-exec" {
     inline = [
       "echo 'Provisioning started on ${self.public_ip}'",
@@ -42,6 +44,7 @@ resource "aws_instance" "server" {
     ]
   }
 
+  # SSH Connection settings
   connection {
     type        = "ssh"
     host        = self.public_ip
@@ -50,7 +53,7 @@ resource "aws_instance" "server" {
     timeout     = "5m"
   }
 
-  # Generate inventory for Ansible
+  # Create Ansible inventory
   provisioner "local-exec" {
     command = <<EOF
       echo "${self.public_ip} ansible_user=ubuntu ansible_private_key_file=${var.ssh_private_key}" > inventory.ini
@@ -64,8 +67,8 @@ resource "aws_instance" "server" {
     EOF
   }
 }
-Az
-# Output the public IP of the instance
+
+# Output the public IP of the EC2 instance
 output "instance_public_ip" {
   description = "Public IP of the EC2 instance"
   value       = aws_instance.server.public_ip
