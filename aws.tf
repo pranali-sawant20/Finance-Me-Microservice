@@ -13,8 +13,14 @@ provider "aws" {
 
 # AWS Key Pair
 resource "aws_key_pair" "example" {
+  count = (data.aws_key_pair.existing_key_pair.id != "" ? 0 : 1)
+
   key_name   = var.key_name
   public_key = file(var.ssh_public_key)
+}
+
+data "aws_key_pair" "existing_key_pair" {
+  key_name = var.key_name
 }
 
 # AWS EC2 Instance
