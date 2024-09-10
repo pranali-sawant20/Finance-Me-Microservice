@@ -53,13 +53,19 @@
         dest: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         mode: '0644'
 
+    - name: Replace placeholder in prometheus.yml with public IP
+      replace:
+        path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
+        regexp: 'REPLACE_WITH_PUBLIC_IP'
+        replace: "{{ prometheus_ip }}"
+
     - name: Start Prometheus with the custom prometheus.yml
       shell: |
         nohup ./prometheus-2.53.2.linux-amd64/prometheus --config.file=prometheus-2.53.2.linux-amd64/prometheus.yml > /dev/null 2>&1 &
       args:
         chdir: /opt
 
-    - name: Run by Grafana container
+    - name: Run Grafana container
       docker_container:
         name: grafana
         image: grafana/grafana
