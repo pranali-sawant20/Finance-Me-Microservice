@@ -33,9 +33,3 @@ variable "ami_id" {
   type        = string
   default     = "ami-0522ab6e1ddcc7055"  # Ensure this AMI ID is valid in your region
 }
-
-variable "environment" {
-  description = "The environment to deploy into (e.g., test, production)"
-  type        = string
-  default     = "test"  # Default to test environment
-}
