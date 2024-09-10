@@ -32,7 +32,7 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Init') {
+        stage('Terraform Init for Test Environment') {
             steps {
                 script {
                     sh '''
@@ -42,18 +42,18 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Plan & Apply for Test') {
+        stage('Terraform Plan & Apply for Test Environment') {
             steps {
                 script {
                     sh '''
-                    terraform plan -out=tfplan -input=false
+                    terraform plan -out=tfplan -input=false -var="environment=test"
                     terraform apply -auto-approve tfplan
                     terraform output -raw instance_public_ip > instance_ip.txt
                     '''
                 }
             }
         }
-        stage('Terraform Operations for Production Workspace') {
+        stage('Terraform Init for Production Environment') {
             when {
                 expression { currentBuild.currentResult == 'SUCCESS' }
             }
@@ -62,13 +62,18 @@ pipeline {
                     sh '''
                     terraform workspace select production || terraform workspace new production
                     terraform init -input=false
-
-                    # Only import key pair if it does not exist
-                    if ! terraform state show aws_key_pair.example 2>/dev/null; then
-                        terraform import aws_key_pair.example key02 || echo "Key pair already imported"
-                    fi
-
-                    terraform plan -out=tfplan -input=false
+                    '''
+                }
+            }
+        }
+        stage('Terraform Plan & Apply for Production Environment') {
+            when {
+                expression { currentBuild.currentResult == 'SUCCESS' }
+            }
+            steps {
+                script {
+                    sh '''
+                    terraform plan -out=tfplan -input=false -var="environment=production"
                     terraform apply -auto-approve tfplan
                     terraform output -raw instance_public_ip > instance_ip.txt
                     '''
