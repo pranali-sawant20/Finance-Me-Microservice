@@ -9,5 +9,5 @@ scrape_configs:
 scrape_configs:
   - job_name: 'node_exporter'
     static_configs:
-      - targets: ['PLACEHOLDER_IP:9100']
+      - targets: ['replace_me_with_instance_ip:9100']
 
