@@ -1,6 +1,9 @@
 - hosts: all
   become: yes
   name: Setup and Update Finance Me Microservice and Monitoring
+  vars:
+    prometheus_ip: "{{ instance_ip }}"  # Variable to store IP passed from Jenkins
+
   tasks:
     - name: Update and upgrade the system
       apt:
