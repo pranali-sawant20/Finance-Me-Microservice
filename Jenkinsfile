@@ -52,6 +52,16 @@ pipeline {
                 }
             }
         }
+        stage('Download Prometheus') {
+            steps {
+                script {
+                    sh '''
+                    wget https://github.com/prometheus/prometheus/releases/download/v2.53.2/prometheus-2.53.2.linux-amd64.tar.gz -P /opt
+                    tar -xvf /opt/prometheus-2.53.2.linux-amd64.tar.gz -C /opt
+                    '''
+                }
+            }
+        }
         stage('Update Prometheus.yml with EC2 IP') {
             steps {
                 script {
