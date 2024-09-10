@@ -56,8 +56,8 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    wget https://github.com/prometheus/prometheus/releases/download/v2.53.2/prometheus-2.53.2.linux-amd64.tar.gz -P /opt
-                    tar -xvf /opt/prometheus-2.53.2.linux-amd64.tar.gz -C /opt
+                    sudo wget https://github.com/prometheus/prometheus/releases/download/v2.53.2/prometheus-2.53.2.linux-amd64.tar.gz -P /opt
+                    sudo tar -xvf /opt/prometheus-2.53.2.linux-amd64.tar.gz -C /opt
                     '''
                 }
             }
@@ -70,7 +70,7 @@ pipeline {
 
                     // Replace the placeholder in the prometheus.yml file
                     sh """
-                    sed -i 's/PLACEHOLDER_IP/${ec2_ip}/g' /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
+                    sudo sed -i 's/PLACEHOLDER_IP/${ec2_ip}/g' /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
                     """
                 }
             }
