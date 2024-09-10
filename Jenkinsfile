@@ -46,24 +46,15 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    terraform plan -out=tfplan -input=false
-                    terraform apply -auto-approve tfplan
-                    terraform output -raw instance_public_ip > instance_ip.txt
-                    '''
-                }
-            }
-        }
-        stage('Terraform Operations for Production Workspace') {
-            when {
-                expression { currentBuild.currentResult == 'SUCCESS' }
-            }
-            steps {
-                script {
-                    sh '''
-                    terraform workspace select production || terraform workspace new production
-                    terraform init -input=false
-                    terraform plan -out=tfplan -input=false
-                    terraform apply -auto-approve tfplan
+                    terraform plan -detailed-exitcode -out=tfplan -input=false
+                    if [ $? -eq 0 ]; then
+                        terraform apply -auto-approve tfplan
+                    elif [ $? -eq 2 ]; then
+                        echo "Terraform plan has changes. Applying them."
+                        terraform apply -auto-approve tfplan
+                    else
+                        echo "No changes detected in Terraform plan."
+                    fi
                     terraform output -raw instance_public_ip > instance_ip.txt
                     '''
                 }
