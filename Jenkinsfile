@@ -58,7 +58,7 @@ pipeline {
                 script {
                     sh '''
                     export INSTANCE_IP=$(cat instance_ip.txt)
-                    ansible-playbook -i inventory.ini -e "instance_ip=$INSTANCE_IP" ansible-playbook.yml
+                    ansible-playbook -i "$INSTANCE_IP," -e "prometheus_ip=$INSTANCE_IP" ansible-playbook.yml
                     '''
                 }
             }
