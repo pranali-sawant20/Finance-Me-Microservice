@@ -32,7 +32,7 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Init') {
+        stage('Terraform Init for Test Environment') {
             steps {
                 script {
                     sh '''
@@ -42,19 +42,36 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Plan & Apply') {
+        stage('Terraform Plan & Apply for Test Environment') {
             steps {
                 script {
                     sh '''
-                    terraform plan -detailed-exitcode -out=tfplan -input=false
-                    if [ $? -eq 0 ]; then
-                        terraform apply -auto-approve tfplan
-                    elif [ $? -eq 2 ]; then
-                        echo "Terraform plan has changes. Applying them."
-                        terraform apply -auto-approve tfplan
-                    else
-                        echo "No changes detected in Terraform plan."
-                    fi
+                    terraform plan -var-file="test.tfvars" -out=tfplan -input=false
+                    terraform apply -auto-approve tfplan
+                    terraform output -raw instance_public_ip > instance_ip.txt
+                    '''
+                }
+            }
+        }
+        stage('Terraform Init for Production Environment') {
+            steps {
+                script {
+                    sh '''
+                    terraform workspace select production || terraform workspace new production
+                    terraform init -input=false
+                    '''
+                }
+            }
+        }
+        stage('Terraform Plan & Apply for Production Environment') {
+            when {
+                expression { currentBuild.currentResult == 'SUCCESS' }
+            }
+            steps {
+                script {
+                    sh '''
+                    terraform plan -var-file="production.tfvars" -out=tfplan -input=false
+                    terraform apply -auto-approve tfplan
                     terraform output -raw instance_public_ip > instance_ip.txt
                     '''
                 }
