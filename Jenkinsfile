@@ -42,32 +42,50 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Plan & Apply') {
+        stage('Terraform Plan & Apply - Test') {
             steps {
                 script {
                     sh '''
-                    terraform plan -out=tfplan -input=false
-                    terraform apply -auto-approve tfplan
+                    terraform plan -out=tfplan-test -input=false
+                    terraform apply -auto-approve tfplan-test
                     '''
-                    // Capture public IP from terraform output
-                    def publicIp = sh(script: 'terraform output -raw public_ip', returnStdout: true).trim()
-                    env.PUBLIC_IP = publicIp
+                    // Capture public IP for test server
+                    def testPublicIp = sh(script: 'terraform output -raw test_public_ip', returnStdout: true).trim()
+                    env.TEST_PUBLIC_IP = testPublicIp
                 }
             }
         }
-        stage('Update Prometheus Config') {
+        stage('Terraform Plan & Apply - Production') {
             steps {
                 script {
-                    // Update the prometheus.yml file with the new public IP
+                    sh '''
+                    terraform workspace select production || terraform workspace new production
+                    terraform init -input=false
+                    terraform plan -out=tfplan-prod -input=false
+                    terraform apply -auto-approve tfplan-prod
+                    '''
+                    // Capture public IP for production server
+                    def prodPublicIp = sh(script: 'terraform output -raw prod_public_ip', returnStdout: true).trim()
+                    env.PROD_PUBLIC_IP = prodPublicIp
+                }
+            }
+        }
+        stage('Run Ansible Playbook for Test Server') {
+            steps {
+                script {
                     sh """
-                    sed -i 's/REPLACE_WITH_PUBLIC_IP/${env.PUBLIC_IP}/g' /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
+                    ansible-playbook -i ${env.TEST_PUBLIC_IP}, ansible-playbook.yml --extra-vars "prometheus_ip=${env.TEST_PUBLIC_IP}"
                     """
                 }
             }
         }
-        stage('Run Ansible Playbook') {
+        stage('Run Ansible Playbook for Production Server') {
             steps {
-                sh 'ansible-playbook -i inventory.ini ansible-playbook.yml'
+                script {
+                    sh """
+                    ansible-playbook -i ${env.PROD_PUBLIC_IP}, ansible-playbook.yml --extra-vars "prometheus_ip=${env.PROD_PUBLIC_IP}"
+                    """
+                }
             }
         }
     }
