@@ -59,7 +59,7 @@
       args:
         chdir: /opt
 
-    - name: Run Grafana container
+    - name: Run by Grafana container
       docker_container:
         name: grafana
         image: grafana/grafana
