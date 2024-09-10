@@ -1,90 +1,81 @@
 - hosts: all
   become: yes
-  vars:
-    node_exporter_version: "1.8.2"
-    prometheus_version: "2.53.2"
-    docker_image: "suguslove10/finance-me-microservice:v1"
-    prometheus_config_url: "https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml"
-  
   name: Setup Finance Me Microservice and Monitoring
   tasks:
+    # Update and upgrade the system
     - name: Update and upgrade the system
       apt:
         upgrade: dist
         update_cache: yes
-        cache_valid_time: 3600
 
+    # Install Docker
     - name: Install Docker
       apt:
         name: docker.io
         state: present
 
+    # Start and enable Docker service
     - name: Start and enable Docker service
       systemd:
         name: docker
         state: started
         enabled: yes
 
+    # Deploy Finance Me microservice container
     - name: Deploy Finance Me microservice container
       docker_container:
         name: finance-me-microservice
-        image: "{{ docker_image }}"
+        image: suguslove10/finance-me-microservice:v1
         state: started
         restart_policy: always
         ports:
           - "8084:8081"
 
+    # Download and install Node Exporter
     - name: Download and install Node Exporter
-      get_url:
-        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
-        dest: "/opt/node_exporter-{{ node_exporter_version }}.tar.gz"
-
-    - name: Extract Node Exporter
-      unarchive:
-        src: "/opt/node_exporter-{{ node_exporter_version }}.tar.gz"
-        dest: "/opt/"
-        remote_src: yes
-
-    - name: Start Node Exporter
-      command: >
-        nohup /opt/node_exporter-{{ node_exporter_version }}-linux-amd64/node_exporter > /dev/null 2>&1 &
+      shell: |
+        wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+        tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz
+        nohup ./node_exporter-1.8.2.linux-amd64/node_exporter > /dev/null 2>&1 &
       args:
         chdir: /opt
 
+    # Download and install Prometheus
     - name: Download and install Prometheus
-      get_url:
-        url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
-        dest: "/opt/prometheus-{{ prometheus_version }}.tar.gz"
+      shell: |
+        wget https://github.com/prometheus/prometheus/releases/download/v2.53.2/prometheus-2.53.2.linux-amd64.tar.gz
+        tar -xvf prometheus-2.53.2.linux-amd64.tar.gz
+      args:
+        chdir: /opt
 
-    - name: Extract Prometheus
-      unarchive:
-        src: "/opt/prometheus-{{ prometheus_version }}.tar.gz"
-        dest: "/opt/"
-        remote_src: yes
-
+    # Remove default prometheus.yml
     - name: Remove default prometheus.yml
       file:
-        path: "/opt/prometheus-{{ prometheus_version }}-linux-amd64/prometheus.yml"
+        path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         state: absent
 
-    - name: Download custom prometheus.yml
+    # Download custom prometheus.yml from repository
+    - name: Download custom prometheus.yml from your repository
       get_url:
-        url: "{{ prometheus_config_url }}"
-        dest: "/opt/prometheus-{{ prometheus_version }}-linux-amd64/prometheus.yml"
+        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
+        dest: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         mode: '0644'
-
+        
+    # Replace placeholder in prometheus.yml with actual IP
     - name: Replace placeholder in prometheus.yml with actual IP
       replace:
-        path: "/opt/prometheus-{{ prometheus_version }}-linux-amd64/prometheus.yml"
+        path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         regexp: 'replace_me_with_instance_ip'
         replace: "{{ prometheus_ip }}"
 
+    # Start Prometheus with the custom prometheus.yml
     - name: Start Prometheus with the custom prometheus.yml
-      command: >
-        nohup /opt/prometheus-{{ prometheus_version }}-linux-amd64/prometheus --config.file=/opt/prometheus-{{ prometheus_version }}-linux-amd64/prometheus.yml > /dev/null 2>&1 &
+      shell: |
+        nohup ./prometheus-2.53.2.linux-amd64/prometheus --config.file=prometheus-2.53.2.linux-amd64/prometheus.yml > /dev/null 2>&1 &
       args:
         chdir: /opt
 
+    # Run Grafana container
     - name: Run Grafana container
       docker_container:
         name: grafana
