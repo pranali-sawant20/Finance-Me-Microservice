@@ -70,7 +70,7 @@
       tags:
         - setup
         - update
-        
+
     - name: Replace placeholder in prometheus.yml with actual IP
       replace:
         path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
