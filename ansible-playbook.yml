@@ -1,76 +1,102 @@
-- hosts: all
-  become: yes
-  name: Setup Finance Me Microservice and Monitoring
-  tasks:
-    - name: Update and upgrade the system
-      apt:
-        upgrade: dist
-        update_cache: yes
-
-    - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
-
-    - name: Start and enable Docker service
-      systemd:
-        name: docker
-        state: started
-        enabled: yes
-
-    - name: Deploy Finance Me microservice container
-      docker_container:
-        name: finance-me-microservice
-        image: suguslove10/finance-me-microservice:v1
-        state: started
-        restart_policy: always
-        ports:
-          - "8084:8081"
-
-    - name: Download and install Node Exporter
-      shell: |
-        wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
-        tar -xvf node_exporter-1.8.2.linux-amd64.tar.gz
-        nohup ./node_exporter-1.8.2.linux-amd64/node_exporter > /dev/null 2>&1 &
-      args:
-        chdir: /opt
-
-    - name: Download and install Prometheus
-      shell: |
-        wget https://github.com/prometheus/prometheus/releases/download/v2.53.2/prometheus-2.53.2.linux-amd64.tar.gz
-        tar -xvf prometheus-2.53.2.linux-amd64.tar.gz
-      args:
-        chdir: /opt
-
-    - name: Remove default prometheus.yml
-      file:
-        path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
-        state: absent
-
-    - name: Download custom prometheus.yml from your repository
-      get_url:
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
-        dest: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
-        mode: '0644'
-        
-    - name: Replace placeholder in prometheus.yml with actual IP
-      replace:
-        path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
-        regexp: 'replace_me_with_instance_ip'
-        replace: "{{ prometheus_ip }}"
-
-    - name: Start Prometheus with the custom prometheus.yml
-      shell: |
-        nohup ./prometheus-2.53.2.linux-amd64/prometheus --config.file=prometheus-2.53.2.linux-amd64/prometheus.yml > /dev/null 2>&1 &
-      args:
-        chdir: /opt
-
-    - name: Run Grafana container
-      docker_container:
-        name: grafana
-        image: grafana/grafana
-        state: started
-        restart_policy: always
-        ports:
-          - "3000:3000"
-
+pipeline {
+    agent any
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        DOCKER_IMAGE_TAG      = "suguslove10/finance-me-microservice:v1"
+    }
+    stages {
+        stage('Clone Git Repository') {
+            steps {
+                git 'https://github.com/suguslove10/finance-me-microservice.git'
+            }
+        }
+        stage('Build Maven Project') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE_TAG} --cache-from=${DOCKER_IMAGE_TAG} ."
+                    sh 'docker images'
+                }
+            }
+        }
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'Docker-cred', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                    sh "echo $PASS | docker login -u $USER --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE_TAG}"
+                }
+            }
+        }
+        stage('Terraform Init') {
+            steps {
+                script {
+                    sh '''
+                    terraform workspace select test || terraform workspace new test
+                    terraform init -input=false
+                    '''
+                }
+            }
+        }
+        stage('Terraform Plan') {
+            steps {
+                script {
+                    sh '''
+                    terraform plan -out=tfplan -input=false
+                    '''
+                }
+            }
+        }
+        stage('Terraform Apply') {
+            steps {
+                script {
+                    sh '''
+                    terraform apply -auto-approve tfplan
+                    terraform output -raw instance_public_ip > instance_ip.txt
+                    '''
+                }
+            }
+        }
+        stage('Terraform Operations for Production Workspace') {
+            when {
+                expression { currentBuild.currentResult == 'SUCCESS' }
+            }
+            steps {
+                script {
+                    sh '''
+                    terraform workspace select production || terraform workspace new production
+                    terraform init -input=false
+                    terraform plan -out=tfplan -input=false
+                    terraform apply -auto-approve tfplan
+                    terraform output -raw instance_public_ip > instance_ip.txt
+                    '''
+                }
+            }
+        }
+        stage('Run Ansible Playbook') {
+            steps {
+                script {
+                    def instanceIp = readFile('instance_ip.txt').trim()
+                    sh """
+                        ansible-playbook -i inventory.ini -e "prometheus_ip=${instanceIp}" ansible-playbook.yml
+                    """
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline executed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}
