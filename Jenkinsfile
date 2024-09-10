@@ -32,12 +32,20 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Plan & Apply') {
+        stage('Terraform Init') {
             steps {
                 script {
                     sh '''
                     terraform workspace select test || terraform workspace new test
                     terraform init -input=false
+                    '''
+                }
+            }
+        }
+        stage('Terraform Plan & Apply') {
+            steps {
+                script {
+                    sh '''
                     terraform plan -out=tfplan -input=false
                     terraform apply -auto-approve tfplan
                     terraform output -raw instance_public_ip > instance_ip.txt
@@ -45,12 +53,32 @@ pipeline {
                 }
             }
         }
-        stage('Run Ansible Playbook for Updates') {
+        stage('Update Only When Necessary') {
+            when {
+                expression { currentBuild.currentResult == 'SUCCESS' }
+            }
+            steps {
+                script {
+                    sh '''
+                    terraform workspace select production || terraform workspace new production
+                    terraform init -input=false
+
+                    # Only run apply if there are changes detected
+                    terraform plan -input=false -out=tfplan || echo "No changes detected"
+                    if [ -f tfplan ]; then
+                        terraform apply -auto-approve tfplan
+                        terraform output -raw instance_public_ip > instance_ip.txt
+                    fi
+                    '''
+                }
+            }
+        }
+        stage('Run Ansible Playbook') {
             steps {
                 script {
                     sh '''
                     export INSTANCE_IP=$(cat instance_ip.txt)
-                    ansible-playbook -i inventory.ini -e "instance_ip=$INSTANCE_IP" ansible-playbook.yml --tags "update"
+                    ansible-playbook -i inventory.ini -e "instance_ip=$INSTANCE_IP" ansible-playbook.yml
                     '''
                 }
             }
