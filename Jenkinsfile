@@ -42,37 +42,16 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Plan & Apply') {
+        stage('Apply Terraform Only If Needed') {
             steps {
                 script {
-                    sh '''
-                    terraform plan -out=tfplan -input=false
-                    terraform apply -auto-approve tfplan
-                    terraform output -raw instance_public_ip > instance_ip.txt
-                    '''
-                }
-            }
-        }
-        stage('Terraform Operations for Production Workspace') {
-            when {
-                expression { currentBuild.currentResult == 'SUCCESS' }
-            }
-            steps {
-                script {
-                    sh '''
-                    terraform workspace select production || terraform workspace new production
-                    terraform init -input=false
-
-                    if terraform state show aws_key_pair.example 2>/dev/null; then
-                        echo "Key pair already exists in the prod workspace"
-                    else
-                        terraform import aws_key_pair.example key02 || echo "Key pair already imported"
-                    fi
-
-                    terraform plan -out=tfplan -input=false
-                    terraform apply -auto-approve tfplan
-                    terraform output -raw instance_public_ip > instance_ip.txt
-                    '''
+                    def changes = sh(returnStdout: true, script: "terraform plan -detailed-exitcode").trim()
+                    if (changes == '2') {
+                        echo 'Changes detected. Applying Terraform changes...'
+                        sh "terraform apply -auto-approve tfplan"
+                    } else {
+                        echo 'No changes detected in the infrastructure.'
+                    }
                 }
             }
         }
