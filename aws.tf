@@ -11,27 +11,17 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Check if the key pair already exists
-data "aws_key_pair" "existing" {
-  key_name = var.key_name
-}
-
 # AWS Key Pair
 resource "aws_key_pair" "example" {
-  count      = data.aws_key_pair.existing.key_name != "" ? 0 : 1
   key_name   = var.key_name
   public_key = file(var.ssh_public_key)
-  
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # AWS EC2 Instance
 resource "aws_instance" "server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  key_name      = data.aws_key_pair.existing.key_name != "" ? data.aws_key_pair.existing.key_name : aws_key_pair.example[0].key_name
+  key_name      = aws_key_pair.example.key_name
 
   tags = {
     Name        = "${terraform.workspace}_server"
