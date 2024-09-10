@@ -1,22 +1,29 @@
 - hosts: all
   become: yes
-  name: Setup Finance Me Microservice and Monitoring
+  name: Setup and Update Finance Me Microservice and Monitoring
   tasks:
     - name: Update and upgrade the system
       apt:
         upgrade: dist
         update_cache: yes
+      tags:
+        - setup
 
     - name: Install Docker
       apt:
         name: docker.io
         state: present
+      tags:
+        - setup
 
     - name: Start and enable Docker service
       systemd:
         name: docker
         state: started
         enabled: yes
+      tags:
+        - setup
+        - update
 
     - name: Deploy Finance Me microservice container
       docker_container:
@@ -26,6 +33,8 @@
         restart_policy: always
         ports:
           - "8084:8081"
+      tags:
+        - update
 
     - name: Download and install Node Exporter
       shell: |
@@ -34,6 +43,8 @@
         nohup ./node_exporter-1.8.2.linux-amd64/node_exporter > /dev/null 2>&1 &
       args:
         chdir: /opt
+      tags:
+        - setup
 
     - name: Download and install Prometheus
       shell: |
@@ -41,29 +52,41 @@
         tar -xvf prometheus-2.53.2.linux-amd64.tar.gz
       args:
         chdir: /opt
+      tags:
+        - setup
 
     - name: Remove default prometheus.yml
       file:
         path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         state: absent
+      tags:
+        - setup
 
     - name: Download custom prometheus.yml from your repository
       get_url:
         url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
         dest: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         mode: '0644'
+      tags:
+        - setup
+        - update
         
     - name: Replace placeholder in prometheus.yml with actual IP
       replace:
         path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         regexp: 'replace_me_with_instance_ip'
         replace: "{{ prometheus_ip }}"
+      tags:
+        - update
 
     - name: Start Prometheus with the custom prometheus.yml
       shell: |
         nohup ./prometheus-2.53.2.linux-amd64/prometheus --config.file=prometheus-2.53.2.linux-amd64/prometheus.yml > /dev/null 2>&1 &
       args:
         chdir: /opt
+      tags:
+        - setup
+        - update
 
     - name: Run Grafana container
       docker_container:
@@ -73,4 +96,5 @@
         restart_policy: always
         ports:
           - "3000:3000"
-
+      tags:
+        - update
