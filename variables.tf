@@ -33,3 +33,9 @@ variable "ami_id" {
   type        = string
   default     = "ami-0522ab6e1ddcc7055"  # Ensure this AMI ID is valid in your region
 }
+
+variable "key_pair_exists" {
+  description = "Flag to indicate if the key pair already exists"
+  type        = bool
+  default     = false
+}
