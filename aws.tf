@@ -11,23 +11,18 @@ provider "aws" {
   region = var.aws_region
 }
 
-# AWS Key Pair
+# AWS Key Pair (only create if it doesn't exist)
 resource "aws_key_pair" "example" {
-  count = (data.aws_key_pair.existing_key_pair.id != "" ? 0 : 1)
-
+  count      = var.environment == "production" ? 1 : 0
   key_name   = var.key_name
   public_key = file(var.ssh_public_key)
-}
-
-data "aws_key_pair" "existing_key_pair" {
-  key_name = var.key_name
 }
 
 # AWS EC2 Instance
 resource "aws_instance" "server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  key_name      = aws_key_pair.example.key_name
+  key_name      = var.environment == "production" ? aws_key_pair.example.key_name : var.key_name
 
   tags = {
     Name        = "${terraform.workspace}_server"
