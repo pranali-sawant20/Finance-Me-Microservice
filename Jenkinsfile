@@ -42,50 +42,54 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Plan & Apply - Test') {
+        stage('Terraform Plan & Apply') {
             steps {
                 script {
                     sh '''
-                    terraform plan -out=tfplan-test -input=false
-                    terraform apply -auto-approve tfplan-test
+                    terraform plan -out=tfplan -input=false
+                    terraform apply -auto-approve tfplan
                     '''
-                    // Capture public IP for test server
-                    def testPublicIp = sh(script: 'terraform output -raw test_public_ip', returnStdout: true).trim()
-                    env.TEST_PUBLIC_IP = testPublicIp
                 }
             }
         }
-        stage('Terraform Plan & Apply - Production') {
+        stage('Update Prometheus.yml with EC2 IP') {
+            steps {
+                script {
+                    // Get the EC2 instance IP from Terraform output
+                    def ec2_ip = sh(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
+
+                    // Replace the placeholder in the prometheus.yml file
+                    sh """
+                    sed -i 's/PLACEHOLDER_IP/${ec2_ip}/g' /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
+                    """
+                }
+            }
+        }
+        stage('Terraform Operations for Production Workspace') {
+            when {
+                expression { currentBuild.currentResult == 'SUCCESS' }
+            }
             steps {
                 script {
                     sh '''
                     terraform workspace select production || terraform workspace new production
                     terraform init -input=false
-                    terraform plan -out=tfplan-prod -input=false
-                    terraform apply -auto-approve tfplan-prod
+
+                    if terraform state show aws_key_pair.example 2>/dev/null; then
+                        echo "Key pair already exists in the prod workspace"
+                    else
+                        terraform import aws_key_pair.example key02 || echo "Key pair already imported"
+                    fi
+
+                    terraform plan -out=tfplan -input=false
+                    terraform apply -auto-approve tfplan
                     '''
-                    // Capture public IP for production server
-                    def prodPublicIp = sh(script: 'terraform output -raw prod_public_ip', returnStdout: true).trim()
-                    env.PROD_PUBLIC_IP = prodPublicIp
                 }
             }
         }
-        stage('Run Ansible Playbook for Test Server') {
+        stage('Run Ansible Playbook') {
             steps {
-                script {
-                    sh """
-                    ansible-playbook -i ${env.TEST_PUBLIC_IP}, ansible-playbook.yml --extra-vars "prometheus_ip=${env.TEST_PUBLIC_IP}"
-                    """
-                }
-            }
-        }
-        stage('Run Ansible Playbook for Production Server') {
-            steps {
-                script {
-                    sh """
-                    ansible-playbook -i ${env.PROD_PUBLIC_IP}, ansible-playbook.yml --extra-vars "prometheus_ip=${env.PROD_PUBLIC_IP}"
-                    """
-                }
+                sh 'ansible-playbook -i inventory.ini ansible-playbook.yml'
             }
         }
     }
