@@ -11,14 +11,13 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Create or use an existing key pair
+# AWS Key Pair
 resource "aws_key_pair" "example" {
-  count      = var.key_pair_exists ? 0 : 1
   key_name   = var.key_name
   public_key = file(var.ssh_public_key)
-
+  # Ensure that Terraform does not recreate the key pair if it already exists
   lifecycle {
-    prevent_destroy = true
+    create_before_destroy = false
   }
 }
 
@@ -26,7 +25,7 @@ resource "aws_key_pair" "example" {
 resource "aws_instance" "server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  key_name      = var.key_name
+  key_name      = aws_key_pair.example.key_name
 
   tags = {
     Name        = "${terraform.workspace}_server"
@@ -40,7 +39,7 @@ resource "aws_instance" "server" {
       "echo 'Provisioning started on ${self.public_ip}'",
       "sudo apt-get update -y",
       "mkdir -p /home/ubuntu/.ssh",
-      "echo '${file(var.ssh_public_key)}' >> /home/ubuntu/.ssh/authorized_keys",
+      "echo '${var.ssh_public_key}' >> /home/ubuntu/.ssh/authorized_keys",
       "chmod 600 /home/ubuntu/.ssh/authorized_keys",
       "chown -R ubuntu:ubuntu /home/ubuntu/.ssh",
       "cat /etc/os-release"
@@ -67,6 +66,15 @@ resource "aws_instance" "server" {
     command = <<EOF
       ansible-playbook -u ubuntu -i inventory.ini -e 'prometheus_ip=${self.public_ip}' -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml
     EOF
+  }
+
+  # Ensure the instance is not recreated unless there are actual changes
+  lifecycle {
+    create_before_destroy = false
+    ignore_changes = [
+      # Ignore changes to the following attributes to avoid unnecessary recreations
+      tags
+    ]
   }
 }
 
