@@ -68,13 +68,8 @@ resource "aws_instance" "server" {
     EOF
   }
 
-  # Ensure the instance is not recreated unless there are actual changes
   lifecycle {
-    create_before_destroy = false
-    ignore_changes = [
-      # Ignore changes to the following attributes to avoid unnecessary recreations
-      tags
-    ]
+    create_before_destroy = true
   }
 }
 
