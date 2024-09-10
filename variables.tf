@@ -34,8 +34,8 @@ variable "ami_id" {
   default     = "ami-0522ab6e1ddcc7055"  # Ensure this AMI ID is valid in your region
 }
 
-variable "key_pair_exists" {
-  description = "Flag to indicate if the key pair already exists"
-  type        = bool
-  default     = false
+variable "environment" {
+  description = "The environment to deploy into (e.g., test, production)"
+  type        = string
+  default     = "test"  # Default to test environment
 }
