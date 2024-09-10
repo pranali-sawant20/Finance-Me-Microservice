@@ -31,7 +31,7 @@ resource "aws_key_pair" "example" {
 resource "aws_instance" "server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  key_name      = data.aws_key_pair.existing.key_name != "" ? data.aws_key_pair.existing.key_name : aws_key_pair.example.key_name
+  key_name      = data.aws_key_pair.existing.key_name != "" ? data.aws_key_pair.existing.key_name : aws_key_pair.example[0].key_name
 
   tags = {
     Name        = "${terraform.workspace}_server"
