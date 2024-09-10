@@ -15,10 +15,6 @@ provider "aws" {
 resource "aws_key_pair" "example" {
   key_name   = var.key_name
   public_key = file(var.ssh_public_key)
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # AWS EC2 Instance
@@ -66,10 +62,6 @@ resource "aws_instance" "server" {
     command = <<EOF
       ansible-playbook -u ubuntu -i inventory.ini -e 'prometheus_ip=${self.public_ip}' -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml
     EOF
-  }
-
-  lifecycle {
-    create_before_destroy = true
   }
 }
 
