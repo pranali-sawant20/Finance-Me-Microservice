@@ -32,20 +32,12 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Init') {
+        stage('Terraform Plan & Apply') {
             steps {
                 script {
                     sh '''
                     terraform workspace select test || terraform workspace new test
                     terraform init -input=false
-                    '''
-                }
-            }
-        }
-        stage('Terraform Plan & Apply') {
-            steps {
-                script {
-                    sh '''
                     terraform plan -out=tfplan -input=false
                     terraform apply -auto-approve tfplan
                     terraform output -raw instance_public_ip > instance_ip.txt
@@ -53,36 +45,13 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Operations for Production Workspace') {
-            when {
-                expression { currentBuild.currentResult == 'SUCCESS' }
-            }
+        stage('Run Ansible Playbook for Updates') {
             steps {
                 script {
                     sh '''
-                    terraform workspace select production || terraform workspace new production
-                    terraform init -input=false
-
-                    if terraform state show aws_key_pair.example 2>/dev/null; then
-                        echo "Key pair already exists in the prod workspace"
-                    else
-                        terraform import aws_key_pair.example key02 || echo "Key pair already imported"
-                    fi
-
-                    terraform plan -out=tfplan -input=false
-                    terraform apply -auto-approve tfplan
-                    terraform output -raw instance_public_ip > instance_ip.txt
+                    export INSTANCE_IP=$(cat instance_ip.txt)
+                    ansible-playbook -i inventory.ini -e "instance_ip=$INSTANCE_IP" ansible-playbook.yml --tags "update"
                     '''
-                }
-            }
-        }
-        stage('Run Ansible Playbook') {
-            steps {
-                script {
-                    def instanceIp = readFile('instance_ip.txt').trim()
-                    sh """
-                        ansible-playbook -i inventory.ini -e "prometheus_ip=${instanceIp}" ansible-playbook.yml
-                    """
                 }
             }
         }
