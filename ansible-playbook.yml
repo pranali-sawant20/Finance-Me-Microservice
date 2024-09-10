@@ -35,30 +35,6 @@
       args:
         chdir: /opt
 
-    - name: Download and install Prometheus
-      shell: |
-        wget https://github.com/prometheus/prometheus/releases/download/v2.53.2/prometheus-2.53.2.linux-amd64.tar.gz
-        tar -xvf prometheus-2.53.2.linux-amd64.tar.gz
-      args:
-        chdir: /opt
-
-    - name: Remove default prometheus.yml
-      file:
-        path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
-        state: absent
-
-    - name: Download custom prometheus.yml from your repository
-      get_url:
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
-        dest: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
-        mode: '0644'
-
-    - name: Start Prometheus with the custom prometheus.yml
-      shell: |
-        nohup ./prometheus-2.53.2.linux-amd64/prometheus --config.file=prometheus-2.53.2.linux-amd64/prometheus.yml > /dev/null 2>&1 &
-      args:
-        chdir: /opt
-
     - name: Run Grafana container
       docker_container:
         name: grafana
