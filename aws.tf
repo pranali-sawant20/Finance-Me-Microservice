@@ -65,8 +65,7 @@ resource "aws_instance" "server" {
   }
 }
 
-# aws.tf
-
+# Output the public IP of the instance
 output "public_ip" {
-  value = aws_instance.my_instance.public_ip
+  value = aws_instance.server.public_ip
 }
