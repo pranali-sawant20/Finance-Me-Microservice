@@ -26,6 +26,8 @@
         restart_policy: always
         ports:
           - "8084:8081"
+        # Optionally set image pull policy
+        pull: always
 
     - name: Download and install Node Exporter
       shell: |
@@ -52,7 +54,7 @@
         url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
         dest: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         mode: '0644'
-        
+
     - name: Replace placeholder in prometheus.yml with actual IP
       replace:
         path: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
@@ -73,3 +75,5 @@
         restart_policy: always
         ports:
           - "3000:3000"
+        # Optionally set image pull policy
+        pull: always
