@@ -48,30 +48,8 @@ pipeline {
                     sh '''
                     terraform plan -out=tfplan -input=false
                     terraform apply -auto-approve tfplan
+                    terraform output -raw instance_public_ip > instance_ip.txt
                     '''
-                }
-            }
-        }
-        stage('Download Prometheus') {
-            steps {
-                script {
-                    sh '''
-                    sudo wget https://github.com/prometheus/prometheus/releases/download/v2.53.2/prometheus-2.53.2.linux-amd64.tar.gz -P /opt
-                    sudo tar -xvf /opt/prometheus-2.53.2.linux-amd64.tar.gz -C /opt
-                    '''
-                }
-            }
-        }
-        stage('Update Prometheus.yml with EC2 IP') {
-            steps {
-                script {
-                    // Get the EC2 instance IP from Terraform output
-                    def ec2_ip = sh(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
-
-                    // Replace the placeholder in the prometheus.yml file
-                    sh """
-                    sudo sed -i 's/PLACEHOLDER_IP/${ec2_ip}/g' /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
-                    """
                 }
             }
         }
@@ -93,13 +71,19 @@ pipeline {
 
                     terraform plan -out=tfplan -input=false
                     terraform apply -auto-approve tfplan
+                    terraform output -raw instance_public_ip > instance_ip.txt
                     '''
                 }
             }
         }
         stage('Run Ansible Playbook') {
             steps {
-                sh 'ansible-playbook -i inventory.ini ansible-playbook.yml'
+                script {
+                    sh '''
+                    export INSTANCE_IP=$(cat instance_ip.txt)
+                    ansible-playbook -i inventory.ini -e "instance_ip=$INSTANCE_IP" ansible-playbook.yml
+                    '''
+                }
             }
         }
     }
