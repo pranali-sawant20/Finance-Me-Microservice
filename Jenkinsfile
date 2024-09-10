@@ -49,28 +49,19 @@ pipeline {
                     terraform plan -out=tfplan -input=false
                     terraform apply -auto-approve tfplan
                     '''
+                    // Capture public IP from terraform output
+                    def publicIp = sh(script: 'terraform output -raw public_ip', returnStdout: true).trim()
+                    env.PUBLIC_IP = publicIp
                 }
             }
         }
-        stage('Terraform Operations for Production Workspace') {
-            when {
-                expression { currentBuild.currentResult == 'SUCCESS' }
-            }
+        stage('Update Prometheus Config') {
             steps {
                 script {
-                    sh '''
-                    terraform workspace select production || terraform workspace new production
-                    terraform init -input=false
-
-                    if terraform state show aws_key_pair.example 2>/dev/null; then
-                        echo "Key pair already exists in the prod workspace"
-                    else
-                        terraform import aws_key_pair.example key02 || echo "Key pair already imported"
-                    fi
-
-                    terraform plan -out=tfplan -input=false
-                    terraform apply -auto-approve tfplan
-                    '''
+                    // Update the prometheus.yml file with the new public IP
+                    sh """
+                    sed -i 's/REPLACE_WITH_PUBLIC_IP/${env.PUBLIC_IP}/g' /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
+                    """
                 }
             }
         }
