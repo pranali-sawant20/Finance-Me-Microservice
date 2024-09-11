@@ -45,7 +45,7 @@ mvn clean package
 docker build -t finance-me-microservice:v1 .
 docker run -p 8081:8080 finance-me-microservice:v1
 ```
-##Jenkins Pipeline Stages
+## Jenkins Pipeline Stages
 - Clone Git Repository: Fetches the project code from GitHub.
 - Build Maven Project: Executes mvn clean package to compile and package the Java project.
 - Build Docker Image: Builds a Docker image for the microservice.
@@ -55,8 +55,11 @@ docker run -p 8081:8080 finance-me-microservice:v1
 - Monitoring Setup: Configures Prometheus and Grafana for system monitoring.
 
 ##Monitoring and Metrics
+Prometheus and Grafana are used for continuous monitoring of the microservices and infrastructure.
 
-
+-Node Exporter: Monitors server metrics such as CPU, memory, and disk usage.
+-Prometheus: Scrapes metrics from the Node Exporter.
+-Grafana: Visualizes metrics through dashboards.
 
 
 
