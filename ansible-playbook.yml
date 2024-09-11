@@ -76,6 +76,7 @@
         chdir: /opt
 
     # Run Grafana container
+    # this is container
     - name: Run Grafana container
       docker_container:
         name: grafana
