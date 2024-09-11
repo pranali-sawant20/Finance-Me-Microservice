@@ -34,10 +34,6 @@ FinanceMe is a financial services provider. The core application code was develo
 - Maven and JDK installed
 
 ### Clone Repository
-```bash
-git clone https://github.com/suguslove10/finance-me-microservice.git
-cd finance-me-microservice
-'''
 ```sh
 git clone git clone https://github.com/suguslove10/finance-me-microservice.git 
 ```
