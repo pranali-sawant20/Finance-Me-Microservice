@@ -1,7 +1,7 @@
 # FinanceMe Microservice with DevOps CI/CD Pipeline
 
 <p align="center">
-  <img src="./devops(cicd).jpg" alt="DevOps CI/CD Pipeline" width="700"/>
+  <img src="./devops(cicd).jpg" alt="DevOps CI/CD Pipeline" width="600"/>
 </p>
 
 
