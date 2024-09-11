@@ -1,28 +1,39 @@
-FinanceMe Microservice with DevOps CI/CD Pipeline
+# FinanceMe Microservice with DevOps CI/CD Pipeline
 
-Project Overview
+## Project Overview
+FinanceMe is a financial services provider. The core application code was developed by someone else, and I made some modifications, focusing on DevOps pipeline automation.
 
-I developed this project for FinanceMe, a global financial services provider, to modernize their infrastructure from a monolithic to a microservices-based architecture. The project includes a fully automated DevOps CI/CD pipeline to enhance scalability, streamline deployments, and improve monitoring and infrastructure management.
+## Key Technologies
+- Spring Boot
+- Maven
+- Docker
+- Jenkins
+- Ansible
+- Terraform
+- Prometheus
+- Grafana
 
-Key Technologies
+## API Endpoints
+- **POST** `/createAccount` – Create a new account.
+- **PUT** `/updateAccount/{accountNo}` – Update account details.
+- **GET** `/viewPolicy/{accountNo}` – View account details.
+- **DELETE** `/deletePolicy/{accountNo}` – Delete an account.
 
-Spring Boot
-Maven
-Docker
-Ansible
-Terraform
-Prometheus
-Grafana
-Jenkins
+## My Contributions
+- Improved the CI/CD pipeline.
+- Configured infrastructure automation using Terraform.
+- Set up Docker for containerization.
+- Configured Prometheus and Grafana for monitoring.
 
-Project Objectives
+## Setup Instructions
 
-The key objectives of this project were:
+### Prerequisites
+- AWS Account
+- Docker & Docker Hub Account
+- Jenkins installed on an AWS EC2 instance
+- Maven and JDK installed
 
-Develop a Mavenized Microservice using Spring Boot and an in-memory H2 database.
-Create REST API Endpoints:
-POST /createAccount: Create a new account.
-PUT /updateAccount/{accountNo}: Update account details.
-GET /viewPolicy/{accountNo}: View account details.
-DELETE /deletePolicy/{accountNo}: Delete an account.
-Implement a CI/CD Pipeline leveraging Jenkins, Docker, Ansible, Terraform, Prometheus, and Grafana for automated builds, deployments, and monitoring.
+### Clone Repository
+```bash
+git clone https://github.com/suguslove10/finance-me-microservice.git
+cd finance-me-microservice
