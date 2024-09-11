@@ -45,6 +45,19 @@ mvn clean package
 docker build -t finance-me-microservice:v1 .
 docker run -p 8081:8080 finance-me-microservice:v1
 ```
+##Jenkins Pipeline Stages
+- Clone Git Repository: Fetches the project code from GitHub.
+- Build Maven Project: Executes mvn clean package to compile and package the Java project.
+- Build Docker Image: Builds a Docker image for the microservice.
+- Push Docker Image: Pushes the image to Docker Hub.
+- Terraform Setup: Initializes and applies Terraform to provision AWS infrastructure.
+- Ansible Playbook Execution: Configures the microservice on the EC2 instance.
+- Monitoring Setup: Configures Prometheus and Grafana for system monitoring.
+
+##Monitoring and Metrics
+
+
+
 
 
 
