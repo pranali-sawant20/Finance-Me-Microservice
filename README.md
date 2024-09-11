@@ -62,7 +62,7 @@ Prometheus and Grafana are used for continuous monitoring of the microservices a
 - Grafana: Visualizes metrics through dashboards.
 
 ### License
-This project is licensed under the MIT License. See the LICENSE file for details.
+License Distributed under the MIT License. See [MIT License](https://opensource.org/licenses/MIT) for more information.
 
 
 
