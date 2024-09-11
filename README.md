@@ -1,4 +1,10 @@
 # FinanceMe Microservice with DevOps CI/CD Pipeline
+<img src="https://drive.google.com/file/d/1Hpko6X9vXYoHMOZqNNP-p2fXQCAMeGSb/view?usp=sharing" alt="Logo" width="80" height="80">
+
+
+
+
+
 
 ## Project Overview
 FinanceMe is a financial services provider. The core application code was developed by someone else, and I made some modifications, focusing on DevOps pipeline automation.
