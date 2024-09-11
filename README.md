@@ -38,6 +38,13 @@ FinanceMe is a financial services provider. The core application code was develo
 git clone https://github.com/suguslove10/finance-me-microservice.git
 cd finance-me-microservice
 '''
+```sh
+git clone git clone https://github.com/suguslove10/finance-me-microservice.git 
+```
+
+
+
+
 ### Build and Run
 ```bash
 # Build the project
