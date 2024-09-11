@@ -37,3 +37,16 @@ FinanceMe is a financial services provider. The core application code was develo
 ```bash
 git clone https://github.com/suguslove10/finance-me-microservice.git
 cd finance-me-microservice
+
+### Build and Run
+```bash
+# Build the project
+mvn clean package
+
+# Build the Docker image
+docker build -t finance-me-microservice:v1 .
+
+# Run the Docker container
+docker run -p 8081:8080 finance-me-microservice:v1
+
+
