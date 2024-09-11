@@ -57,9 +57,9 @@ docker run -p 8081:8080 finance-me-microservice:v1
 ## Monitoring and Metrics
 Prometheus and Grafana are used for continuous monitoring of the microservices and infrastructure.
 
--Node Exporter: Monitors server metrics such as CPU, memory, and disk usage.
--Prometheus: Scrapes metrics from the Node Exporter.
--Grafana: Visualizes metrics through dashboards.
+- Node Exporter: Monitors server metrics such as CPU, memory, and disk usage.
+- Prometheus: Scrapes metrics from the Node Exporter.
+- Grafana: Visualizes metrics through dashboards.
 
 
 
