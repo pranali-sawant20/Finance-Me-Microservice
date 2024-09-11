@@ -54,7 +54,7 @@ docker run -p 8081:8080 finance-me-microservice:v1
 - Ansible Playbook Execution: Configures the microservice on the EC2 instance.
 - Monitoring Setup: Configures Prometheus and Grafana for system monitoring.
 
-##Monitoring and Metrics
+## Monitoring and Metrics
 Prometheus and Grafana are used for continuous monitoring of the microservices and infrastructure.
 
 -Node Exporter: Monitors server metrics such as CPU, memory, and disk usage.
