@@ -1,6 +1,6 @@
 # FinanceMe Microservice with DevOps CI/CD Pipeline
-(https://drive.google.com/drive/u/0/recent)
-![des] (./devops(cicd).jpg)
+
+![Description of JPG](./devops(cicd).jpg)
 
 
 
