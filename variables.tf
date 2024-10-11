@@ -13,7 +13,7 @@ variable "instance_type" {
 variable "key_name" {
   description = "The name of the SSH key pair to use for access"
   type        = string
-  default     = "new-key"       # Make sure this key pair exists in your AWS account
+  default     = "my-key"       # Make sure this key pair exists in your AWS account
 }
 
 variable "ssh_private_key" {
@@ -31,5 +31,5 @@ variable "ssh_public_key" {
 variable "ami_id" {
   description = "The ID of the AMI to use for the instance"
   type        = string
-  default     = "ami-0522ab6e1ddcc7055"  # Ensure this AMI ID is valid in your region
+  default     = "ami-0fff1b9a61dec8a5f"  # Ensure this AMI ID is valid in your region
 }
