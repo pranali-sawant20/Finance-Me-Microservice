@@ -57,7 +57,7 @@
     # Download custom prometheus.yml from repository
     - name: Download custom prometheus.yml from your repository
       get_url:
-        url: https://raw.githubusercontent.com/suguslove10/finance-me-microservice/master/prometheus.yml
+        url: https://raw.githubusercontent.com/pranali-sawant20/Finance-Me-Microservice/refs/heads/master/prometheus.yml
         dest: /opt/prometheus-2.53.2.linux-amd64/prometheus.yml
         mode: '0644'
         
