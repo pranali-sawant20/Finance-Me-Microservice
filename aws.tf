@@ -63,7 +63,7 @@ resource "aws_instance" "server" {
   # Run Ansible playbook
   provisioner "local-exec" {
     command = <<EOF
-      ansible-playbook -u ubuntu -i inventory.ini -e 'prometheus_ip=${self.public_ip}' -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml
+      ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ubuntu -i inventory.ini -e 'prometheus_ip=${self.public_ip}' -e 'ansible_python_interpreter=/usr/bin/python3' ansible-playbook.yml
     EOF
   }
 }
