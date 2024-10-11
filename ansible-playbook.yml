@@ -25,7 +25,7 @@
     - name: Deploy Finance Me microservice container
       docker_container:
         name: finance-me-microservice
-        image: suguslove10/finance-me-microservice:v1
+        image: pranalisawant/finance-me-microservice:v1
         state: started
         restart_policy: always
         ports:
