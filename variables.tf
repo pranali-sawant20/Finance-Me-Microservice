@@ -13,7 +13,7 @@ variable "instance_type" {
 variable "key_name" {
   description = "The name of the SSH key pair to use for access"
   type        = string
-  default     = "my-key"       # Make sure this key pair exists in your AWS account
+  default     = "new-key"       # Make sure this key pair exists in your AWS account
 }
 
 variable "ssh_private_key" {
