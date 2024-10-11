@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "The AWS region to deploy resources into"
   type        = string
-  default     = "us-east-1"  # Change if deploying to a different region
+  default     = "ap-south-1"  # Change if deploying to a different region
 }
 
 variable "instance_type" {
@@ -31,5 +31,5 @@ variable "ssh_public_key" {
 variable "ami_id" {
   description = "The ID of the AMI to use for the instance"
   type        = string
-  default     = "ami-0fff1b9a61dec8a5f"  # Ensure this AMI ID is valid in your region
+  default     = "ami-0dee22c13ea7a9a67"  # Ensure this AMI ID is valid in your region
 }
