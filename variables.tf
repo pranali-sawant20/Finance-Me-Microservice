@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "The AWS region to deploy resources into"
   type        = string
-  default     = "ap-south-1"  # Change if deploying to a different region
+  default     = "us-east-1"  # Change if deploying to a different region
 }
 
 variable "instance_type" {
@@ -13,7 +13,7 @@ variable "instance_type" {
 variable "key_name" {
   description = "The name of the SSH key pair to use for access"
   type        = string
-  default     = "key02"       # Make sure this key pair exists in your AWS account
+  default     = "new-key"       # Make sure this key pair exists in your AWS account
 }
 
 variable "ssh_private_key" {
