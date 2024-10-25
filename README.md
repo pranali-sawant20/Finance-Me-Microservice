@@ -16,7 +16,6 @@
 FinanceMe is a financial services provider. The core application code was developed by someone else, and I made some modifications, focusing on DevOps pipeline automation.
 
 ## Key Technologies
-- Spring Boot
 - Maven
 - Docker
 - Jenkins
