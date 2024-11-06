@@ -1,3 +1,4 @@
+#installation of prometheus
 global:
   scrape_interval: 4s
 
