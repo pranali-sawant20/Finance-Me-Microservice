@@ -31,7 +31,7 @@ resource "aws_instance" "server" {
     Project     = "FinanceMe"
   }
 
-  # Remote provisioning
+  # # Remote provisioning
   provisioner "remote-exec" {
     inline = [
       "echo 'Provisioning started on ${self.public_ip}'",
